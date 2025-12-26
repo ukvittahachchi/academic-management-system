@@ -61,6 +61,8 @@ export default function Home() {
           </Link>
         </div>
 
+
+
         {/* Admin Card */}
         <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
           <div className="flex items-center mb-4">
@@ -84,6 +86,31 @@ export default function Home() {
           </Link>
         </div>
       </div>
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 max-w-2xl mx-auto mt-8">
+  <h3 className="font-bold text-gray-800 mb-3">Development Dashboard</h3>
+  <div className="flex flex-wrap gap-3">
+    <a 
+      href="/test" 
+      className="px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white rounded-lg font-medium"
+    >
+      🔧 Run Connection Tests
+    </a>
+    <a 
+      href="http://localhost:5000/api/health" 
+      target="_blank"
+      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium"
+    >
+      📊 API Health Check
+    </a>
+    <a 
+      href="http://localhost/phpmyadmin" 
+      target="_blank"
+      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
+    >
+      🗄️ phpMyAdmin
+    </a>
+  </div>
+</div>
 
       {/* API Status Check */}
       <div className="bg-white rounded-xl shadow p-6 max-w-2xl mx-auto">

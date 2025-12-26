@@ -1,0 +1,17 @@
+{
+  "name": "academic-management-system",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:all": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run dev\" \"echo '🚀 Both servers starting...'\"",
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "start:all": "concurrently \"cd backend && npm start\" \"cd frontend && npm start\"",
+    "test:all": "cd backend && npm test && cd ../frontend && npm run type-check"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.1"
+  }
+}

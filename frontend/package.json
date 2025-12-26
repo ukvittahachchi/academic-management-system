@@ -2,11 +2,15 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start"
-  },
+   "scripts": {
+  "dev": "next dev --webpack",
+  "dev:verbose": "NEXT_PUBLIC_DEBUG_MODE=true next dev --webpack",
+  "build": "next build",
+  "start": "next start",
+  "lint": "next lint",
+  "format": "prettier --write \"app/**/*.tsx\" \"components/**/*.tsx\" \"lib/**/*.ts\"",
+  "type-check": "tsc --noEmit"
+},
   "dependencies": {
     "next": "16.1.1",
     "react": "19.2.3",

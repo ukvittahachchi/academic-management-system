@@ -1,0 +1,15 @@
+{
+  "watch": ["src"],
+  "ext": "js,json",
+  "ignore": ["src/logs/*", "node_modules"],
+  "exec": "node src/server.js",
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "events": {
+    "restart": "echo '🔄 Backend server restarted due to changes'",
+    "crash": "echo '💥 Server crashed! Waiting for changes...'"
+  },
+  "delay": 1000,
+  "legacyWatch": true
+}

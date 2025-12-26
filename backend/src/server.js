@@ -3,54 +3,96 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
-const dotenv = require('dotenv');
+const dotenv = require('path');
 const path = require('path');
-const mysqlDB = require('./config/mysql');
+
+// Load environment variables
+require('dotenv').config();
+
+// Import database connections
+const database = require('./config/mysql');
 const mongoDB = require('./config/mongodb');
 
-
-
-// ======================
-// LOAD ENV VARIABLES
-// ======================
-dotenv.config();
-
-// ======================
-// DATABASE CONNECTIONS
-// ======================
-const connectMySQL = require('./config/mysql');
-const connectMongoDB = require('./config/mongodb');
-
-// ======================
-// ROUTES
-// ======================
+// Import routes
 const testRoutes = require('./routes/test.routes');
 const authRoutes = require('./routes/auth.routes');
 
-// ======================
-// INIT APP
-// ======================
+// Import error handler
+const errorHandler = require('./middlewares/error.middleware');
+const logger = require('./utils/logger');
+
+// Initialize Express app
 const app = express();
+
+// ======================
+// CORS ALLOWED ORIGINS
+// ======================
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'http://localhost:5000',
+  // Add your production domains later
+  // 'https://your-school-domain.com',
+];
 
 // ======================
 // SECURITY MIDDLEWARE
 // ======================
-app.use(helmet());
+app.use(helmet()); // Security headers
 
-app.use(
-  cors({
-    origin: process.env.CORS_ORIGINS?.split(',') || ['http://localhost:3000'],
-    credentials: true,
-  })
-);
+// ======================
+// CORS CONFIGURATION
+// ======================
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, postman)
+    if (!origin) return callback(null, true);
+    
+    // In development, allow all origins for easier testing
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers'
+  ],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  maxAge: 86400, // 24 hours
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+};
+
+app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 
 // ======================
 // RATE LIMITING
 // ======================
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
-  message: 'Too many requests from this IP, please try again later.',
+  max: 100, // Limit each IP to 100 requests per windowMs
+  message: {
+    success: false,
+    message: 'Too many requests from this IP, please try again later.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
 });
 app.use('/api', limiter);
 
@@ -64,7 +106,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // LOGGING
 // ======================
 if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
+  app.use(morgan('dev', { stream: logger.stream })); // Log HTTP requests
 }
 
 // ======================
@@ -73,17 +115,27 @@ if (process.env.NODE_ENV === 'development') {
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ======================
-// REQUEST LOGGER
+// REQUEST LOGGER (Custom)
 // ======================
 app.use((req, res, next) => {
-  console.log(`📥 ${req.method} ${req.url} - ${new Date().toISOString()}`);
+  const start = Date.now();
+  
+  // Log when response finishes
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    logger.http(`${req.method} ${req.originalUrl} - ${res.statusCode} - ${duration}ms`);
+  });
+  
   next();
 });
 
 // ======================
-// HEALTH CHECK
+// HEALTH CHECK ROUTE
 // ======================
 app.get('/api/health', (req, res) => {
+  const origin = req.headers.origin || 'Not specified';
+  const isOriginAllowed = allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development';
+  
   res.status(200).json({
     success: true,
     status: 'OK',
@@ -97,8 +149,38 @@ app.get('/api/health', (req, res) => {
       auth: '/api/auth',
       students: '/api/students',
       teachers: '/api/teachers',
-      admin: '/api/admin',
+      admin: '/api/admin'
     },
+    database: {
+      mysql: 'Connected',
+      mongodb: 'Connected'
+    },
+    cors: {
+      origin: origin,
+      allowed: isOriginAllowed,
+      allowedOrigins: allowedOrigins
+    },
+    server: {
+      port: process.env.PORT || 5000,
+      uptime: process.uptime(),
+      memory: process.memoryUsage()
+    }
+  });
+});
+
+// ======================
+// ROOT ROUTE
+// ======================
+app.get('/', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Welcome to Academic Management System API',
+    documentation: 'Visit /api/health for API information',
+    frontend: process.env.FRONTEND_URL || 'http://localhost:3000',
+    version: '1.0.0',
+    cors: {
+      allowedOrigins: allowedOrigins
+    }
   });
 });
 
@@ -109,46 +191,32 @@ app.use('/api/test', testRoutes);
 app.use('/api/auth', authRoutes);
 
 // ======================
-// 404 HANDLER (FIXED ✅)
+// 404 NOT FOUND HANDLER
 // ======================
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Route not found: ${req.originalUrl}`,
-    suggestion: 'Check /api/health for available endpoints',
-  });
+app.use('*', (req, res, next) => {
+  const error = new Error(`Route not found: ${req.originalUrl}`);
+  error.statusCode = 404;
+  next(error);
 });
 
 // ======================
-// GLOBAL ERROR HANDLER
+// GLOBAL ERROR HANDLER (MUST BE LAST)
 // ======================
-app.use((err, req, res, next) => {
-  console.error('🔥 Error:', err.stack);
-
-  const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
-
-  res.status(statusCode).json({
-    success: false,
-    message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-  });
-});
+app.use(errorHandler);
 
 // ======================
-// DATABASE INIT
+// DATABASE CONNECTIONS
 // ======================
 const initializeDatabases = async () => {
   try {
-    await mysqlDB.connect();   // ✅ correct
-    await mongoDB.connect();   // ✅ correct
-    console.log('✅ All databases connected successfully!');
+    await database.connect();
+    await mongoDB.connect();
+    logger.info('✅ All databases connected successfully!');
   } catch (error) {
-    console.error('❌ Database connection failed:', error.message);
+    logger.error('❌ Database connection failed:', error.message);
     process.exit(1);
   }
 };
-
 
 // ======================
 // START SERVER
@@ -157,39 +225,70 @@ const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   try {
+    // Connect to databases first
     await initializeDatabases();
-
-    app.listen(PORT, () => {
-      console.log('\n' + '='.repeat(50));
+    
+    // Start Express server
+    const server = app.listen(PORT, () => {
+      console.log('\n' + '='.repeat(60));
       console.log('🎓 ACADEMIC MANAGEMENT SYSTEM BACKEND');
-      console.log('='.repeat(50));
+      console.log('='.repeat(60));
       console.log(`✅ Server running on: http://localhost:${PORT}`);
       console.log(`📊 Environment: ${process.env.NODE_ENV}`);
       console.log(`📚 Health Check: http://localhost:${PORT}/api/health`);
-      console.log(`🎯 Frontend URL: ${process.env.FRONTEND_URL}`);
+      console.log(`🎯 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
       console.log(`⏰ Started at: ${new Date().toLocaleString()}`);
-      console.log('='.repeat(50) + '\n');
+      console.log(`🌐 CORS Origins: ${allowedOrigins.join(', ')}`);
+      console.log('='.repeat(60));
+      console.log('\n📋 Available Routes:');
+      console.log('  GET  /api/health     - Health check');
+      console.log('  GET  /api/test/db    - Test database connection');
+      console.log('  GET  /api/test/system - Get system information');
+      console.log('  GET  /api/test/students - Get sample students');
+      console.log('  GET  /api/test/cors   - Test CORS configuration');
+      console.log('  POST /api/test/echo   - Echo POST request');
+      console.log('  GET  /api/auth/status - Auth system status');
+      console.log('  POST /api/auth/login  - User login');
+      console.log('  POST /api/auth/register - User registration');
+      console.log('='.repeat(60) + '\n');
     });
+    
+    // Handle server errors
+    server.on('error', (error) => {
+      if (error.code === 'EADDRINUSE') {
+        logger.error(`Port ${PORT} is already in use`);
+        console.error(`❌ Port ${PORT} is already in use. Please kill the process or use a different port.`);
+        process.exit(1);
+      } else {
+        logger.error('Server error:', error);
+        throw error;
+      }
+    });
+    
   } catch (error) {
-    console.error('🔥 Failed to start server:', error);
+    logger.error('🔥 Failed to start server:', error);
+    console.error('🔥 Failed to start server:', error.message);
     process.exit(1);
   }
 };
 
-// ======================
-// GRACEFUL SHUTDOWN
-// ======================
+// Handle graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('👋 SIGTERM received. Shutting down gracefully...');
+  logger.info('👋 SIGTERM received. Shutting down gracefully...');
+  console.log('\n👋 SIGTERM received. Shutting down gracefully...');
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
-  console.log('👋 SIGINT received. Shutting down gracefully...');
+  logger.info('👋 SIGINT received. Shutting down gracefully...');
+  console.log('\n👋 SIGINT received. Shutting down gracefully...');
   process.exit(0);
 });
 
-// ======================
-// RUN SERVER
-// ======================
-startServer();
+// Export app for testing
+module.exports = { app, allowedOrigins };
+
+// Start the server only if this file is run directly
+if (require.main === module) {
+  startServer();
+}
