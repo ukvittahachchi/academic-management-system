@@ -3,107 +3,35 @@ const { AppError, AuthenticationError, AuthorizationError } = require('../utils/
 const User = require('../models/User.model');
 
 // ======================
-// ENHANCED AUTHENTICATION MIDDLEWARE
+// HELPER: COOKIE SETTER
 // ======================
-const authenticate = async (req, res, next) => {
-  try {
-    // Get token from header or cookie
-    const token = jwtService.getTokenFromHeader(req) || req.cookies?.accessToken;
+const setAuthCookies = (res, accessToken, refreshToken) => {
+  // Access token cookie (short-lived)
+  res.cookie('accessToken', accessToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: '/'
+  });
 
-    if (!token) {
-      throw new AuthenticationError('No authentication token provided');
-    }
+  // Refresh token cookie (long-lived, more secure)
+  res.cookie('refreshToken', refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+    path: '/api/auth/refresh'
+  });
+};
 
-    // Verify token
-    const { valid, decoded, error } = jwtService.verifyAccessToken(token);
-
-    if (!valid) {
-      // Try to refresh token if expired
-      if (error?.type === 'TokenExpiredError' && req.cookies?.refreshToken) {
-        return await handleTokenRefresh(req, res, next);
-      }
-      throw new AuthenticationError(error?.message || 'Invalid token');
-    }
-
-    // Verify user still exists and is active
-    const user = await User.findById(decoded.userId);
-    if (!user) {
-      throw new AuthenticationError('User account no longer exists');
-    }
-
-    if (!user.is_active) {
-      throw new AuthenticationError('Your account has been deactivated');
-    }
-
-    // Attach enhanced user data to request
-    req.user = {
-      userId: decoded.userId,
-      username: decoded.username,
-      role: decoded.role,
-      schoolId: decoded.schoolId,
-      classGrade: decoded.classGrade,
-      subject: decoded.subject,
-      fullName: user.full_name,
-      permissions: getUserPermissions(decoded.role)
-    };
-
-    next();
-  } catch (error) {
-    next(error);
-  }
+const clearAuthCookies = (res) => {
+  res.clearCookie('accessToken', { path: '/' });
+  res.clearCookie('refreshToken', { path: '/api/auth/refresh' });
 };
 
 // ======================
-// TOKEN REFRESH HANDLER
-// ======================
-const handleTokenRefresh = async (req, res, next) => {
-  try {
-    const refreshToken = req.cookies?.refreshToken;
-    
-    if (!refreshToken) {
-      throw new AuthenticationError('Session expired. Please login again.');
-    }
-
-    const { valid, decoded } = jwtService.verifyRefreshToken(refreshToken);
-    
-    if (!valid) {
-      throw new AuthenticationError('Invalid refresh token');
-    }
-
-    // Get user and generate new tokens
-    const user = await User.findById(decoded.userId);
-    if (!user || !user.is_active) {
-      throw new AuthenticationError('User not found or inactive');
-    }
-
-    const tokens = jwtService.createTokenResponse(user);
-    
-    // Set new tokens in cookies
-    setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
-    
-    // Attach user to request
-    req.user = {
-      userId: user.user_id,
-      username: user.username,
-      role: user.role,
-      schoolId: user.school_id,
-      classGrade: user.class_grade,
-      subject: user.subject,
-      fullName: user.full_name,
-      permissions: getUserPermissions(user.role)
-    };
-
-    // Add refreshed flag to response
-    res.locals.tokenRefreshed = true;
-    
-    next();
-  } catch (error) {
-    next(error);
-  }
-};
-
-// ======================
-// ROLE PERMISSIONS
+// HELPER: ROLE PERMISSIONS
 // ======================
 const getUserPermissions = (role) => {
   const permissions = {
@@ -132,6 +60,101 @@ const getUserPermissions = (role) => {
   };
   
   return permissions[role] || [];
+};
+
+// ======================
+// ENHANCED AUTHENTICATION MIDDLEWARE
+// ======================
+const authenticate = async (req, res, next) => {
+  try {
+    // 1. Get token from header or cookie
+    const token = jwtService.getTokenFromHeader(req) || req.cookies?.accessToken;
+
+    if (!token) {
+      throw new AuthenticationError('No authentication token provided. Please log in.');
+    }
+
+    // 2. Verify token
+    const { valid, decoded, error } = jwtService.verifyAccessToken(token);
+
+    // 3. Handle Invalid/Expired Token
+    if (!valid) {
+      // Check if it's an expired token and we have a refresh token
+      if (error?.type === 'TokenExpiredError' && req.cookies?.refreshToken) {
+        // --- AUTO REFRESH LOGIC ---
+        const refreshToken = req.cookies.refreshToken;
+        const { valid: refreshValid, decoded: refreshDecoded } = jwtService.verifyRefreshToken(refreshToken);
+
+        if (refreshValid) {
+          // Get user based on refresh token data
+          const user = await User.findById(refreshDecoded.userId);
+
+          if (user && user.is_active) {
+            // Generate new tokens
+            const tokens = jwtService.createTokenResponse(user);
+
+            // Set new tokens in cookies
+            setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
+
+            // Attach user data to request
+            req.user = {
+              userId: user._id, 
+              username: user.username,
+              role: user.role,
+              schoolId: user.school_id,
+              classGrade: user.class_grade,
+              subject: user.subject,
+              fullName: user.full_name,
+              permissions: getUserPermissions(user.role)
+            };
+
+            // Add refreshed flag to response
+            res.locals.tokenRefreshed = true;
+            
+            // Allow request to proceed
+            return next();
+          }
+        }
+      }
+
+      // If refresh failed or wasn't applicable
+      throw new AuthenticationError(
+        error?.type === 'TokenExpiredError' 
+          ? 'Your session has expired. Please log in again.' 
+          : 'Invalid authentication token.'
+      );
+    }
+
+    // 4. Token is valid - Verify user still exists and is active
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      throw new AuthenticationError('User account no longer exists');
+    }
+
+    if (!user.is_active) {
+      throw new AuthenticationError('Your account has been deactivated. Please contact administrator.');
+    }
+
+    // 5. Attach enhanced user data to request
+    req.user = {
+      userId: decoded.userId,
+      username: decoded.username,
+      role: decoded.role,
+      schoolId: decoded.schoolId,
+      classGrade: decoded.classGrade,
+      subject: decoded.subject,
+      fullName: user.full_name,
+      permissions: getUserPermissions(decoded.role)
+    };
+
+    next();
+  } catch (error) {
+    // Clear cookies if authentication fails to prevent loop
+    if (error instanceof AuthenticationError) {
+      clearAuthCookies(res);
+    }
+    next(error);
+  }
 };
 
 // ======================
@@ -212,34 +235,6 @@ const requirePermission = (...permissions) => {
       next(error);
     }
   };
-};
-
-// ======================
-// COOKIE HELPER FUNCTIONS
-// ======================
-const setAuthCookies = (res, accessToken, refreshToken) => {
-  // Access token cookie (short-lived)
-  res.cookie('accessToken', accessToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    path: '/'
-  });
-
-  // Refresh token cookie (long-lived, more secure)
-  res.cookie('refreshToken', refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-    path: '/api/auth/refresh'
-  });
-};
-
-const clearAuthCookies = (res) => {
-  res.clearCookie('accessToken', { path: '/' });
-  res.clearCookie('refreshToken', { path: '/api/auth/refresh' });
 };
 
 // ======================

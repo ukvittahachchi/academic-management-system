@@ -11,18 +11,36 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { login, error } = useAuth();
+  // Added local error state to handle validation and specific API errors
+  const [error, setError] = useState(''); 
+  
+  const { login } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(''); // Clear previous errors
+    
+    // Validate locally first
+    if (!username.trim() || !password.trim()) {
+      setError('Please enter both username and password');
+      return;
+    }
+
     setIsSubmitting(true);
     
     try {
       await login(username, password);
-      // Navigation happens in the auth context after successful login
-    } catch (error) {
-      // Error is already handled in the auth context
+      // Navigation happens in auth context
+    } catch (error: any) {
+      // Check for specific error types based on API response
+      if (error.message?.includes('locked')) {
+        setError(error.message);
+      } else if (error.message?.includes('inactive')) {
+        setError(error.message);
+      } else {
+        setError('Login failed. Please check your credentials and try again.');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -30,6 +48,7 @@ export default function LoginPage() {
 
   // Demo credentials for testing
   const useDemoCredentials = (role: 'student' | 'teacher' | 'admin') => {
+    setError(''); // Clear errors when filling demo data
     switch (role) {
       case 'student':
         setUsername('test_student');
@@ -79,7 +98,10 @@ export default function LoginPage() {
                   id="username"
                   type="text"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  onChange={(e) => {
+                    setUsername(e.target.value);
+                    if (error) setError(''); // Clear error on typing
+                  }}
                   className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                   placeholder="Enter your username"
                   required
@@ -104,7 +126,10 @@ export default function LoginPage() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (error) setError(''); // Clear error on typing
+                  }}
                   className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
                   placeholder="Enter your password"
                   required
@@ -124,7 +149,7 @@ export default function LoginPage() {
 
             {/* Error Message */}
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg animate-fade-in">
                 <div className="flex items-center">
                   <span className="mr-2">❌</span>
                   <span className="text-sm">{error}</span>

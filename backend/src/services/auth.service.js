@@ -8,15 +8,27 @@ class AuthService {
   // ======================
   async login(username, password, ipAddress = null, userAgent = null) {
     try {
-      // 1. Validate input
+      // 1. Validate input with better messages
       if (!username || !password) {
-        throw new AppError('Username and password are required', 400);
+        throw new AppError('Please enter both username and password', 400);
+      }
+
+      // Trim and validate
+      username = username.trim();
+      if (username.length < 3) {
+        throw new AppError('Username must be at least 3 characters', 400);
+      }
+
+      if (password.length < 6) {
+        throw new AppError('Password must be at least 6 characters', 400);
       }
 
       // 2. Check if account is locked
       const isLocked = await User.isAccountLocked(username);
       if (isLocked) {
         const remainingTime = await User.getLockTimeRemaining(username);
+        const minutes = Math.ceil(remainingTime / 60);
+        
         await User.logAuthActivity(null, 'account_locked', ipAddress, userAgent, {
           username,
           reason: 'Too many failed attempts',
@@ -24,7 +36,7 @@ class AuthService {
         });
         
         throw new AuthenticationError(
-          `Account is temporarily locked. Please try again in ${Math.ceil(remainingTime / 60)} minutes.`
+          `Account is temporarily locked due to too many failed login attempts. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`
         );
       }
 
@@ -37,6 +49,7 @@ class AuthService {
           reason: 'User not found'
         });
         
+        // Don't reveal that user doesn't exist for security
         throw new AuthenticationError('Invalid username or password');
       }
 
@@ -46,25 +59,37 @@ class AuthService {
           reason: 'Account is inactive'
         });
         
-        throw new AuthenticationError('Your account is inactive. Please contact administrator.');
+        throw new AuthenticationError('Your account is inactive. Please contact your school administrator.');
       }
 
       // 5. Verify password
       const isPasswordValid = await User.verifyPassword(password, user.password_hash);
       if (!isPasswordValid) {
         await User.updateLoginAttempts(username, false);
+        
+        // Check remaining attempts
+        const remainingAttempts = 5 - (user.login_attempts + 1);
         await User.logAuthActivity(user.user_id, 'login_failed', ipAddress, userAgent, {
-          reason: 'Invalid password'
+          reason: 'Invalid password',
+          remainingAttempts
         });
         
-        throw new AuthenticationError('Invalid username or password');
+        let errorMessage = 'Invalid username or password';
+        if (remainingAttempts <= 3 && remainingAttempts > 0) {
+          errorMessage += `. ${remainingAttempts} attempt${remainingAttempts > 1 ? 's' : ''} remaining.`;
+        }
+        
+        throw new AuthenticationError(errorMessage);
       }
 
-      // 6. Successful login - update attempts and log
+      // 6. Successful login
       await User.updateLoginAttempts(username, true);
-      await User.logAuthActivity(user.user_id, 'login', ipAddress, userAgent);
+      await User.logAuthActivity(user.user_id, 'login', ipAddress, userAgent, {
+        role: user.role,
+        grade: user.class_grade
+      });
 
-      // 7. Remove sensitive data before returning
+      // 7. Remove sensitive data
       const safeUser = { ...user };
       delete safeUser.password_hash;
       delete safeUser.password_reset_token;
@@ -75,7 +100,7 @@ class AuthService {
 
       return {
         success: true,
-        message: 'Login successful',
+        message: `Welcome back, ${safeUser.full_name}!`,
         ...tokens
       };
 
@@ -86,7 +111,9 @@ class AuthService {
       if (error instanceof AppError) {
         throw error;
       }
-      throw new AppError('Login failed. Please try again.', 500);
+      
+      // Don't expose internal errors to users
+      throw new AppError('Login failed. Please check your credentials and try again.', 500);
     }
   }
 

@@ -8,6 +8,10 @@ import { apiClient } from '@/lib/api-client';
 import { Module, ModuleFilters } from '@/lib/types/module';
 import { validateModuleForm, getErrorMessage, formatDate } from '@/lib/validation';
 
+// UI Components
+import { CardSkeleton, TableSkeleton } from '@/components/ui/LoadingSpinner';
+import { ErrorMessage } from '@/components/ui/ErrorMessage';
+
 export default function AdminModulesPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -190,7 +194,7 @@ export default function AdminModulesPage() {
     <AdminRoute>
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
-        <header className="bg-white shadow">
+        <header className="bg-white shadow sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex justify-between items-center">
               <div>
@@ -203,7 +207,7 @@ export default function AdminModulesPage() {
               </div>
               <button
                 onClick={handleCreate}
-                className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow flex items-center"
+                className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow flex items-center transition"
               >
                 <span className="mr-2">➕</span> Create New Module
               </button>
@@ -211,261 +215,266 @@ export default function AdminModulesPage() {
           </div>
         </header>
 
-        {/* Statistics */}
-        {statistics && (
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="bg-white rounded-xl shadow p-6">
-                <div className="flex items-center">
-                  <div className="bg-purple-100 p-3 rounded-lg mr-4">
-                    <span className="text-purple-600 text-xl">📚</span>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Total Modules</p>
-                    <p className="text-2xl font-bold">{statistics.total_modules}</p>
-                  </div>
-                </div>
+        {/* Main Content Area */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          {isLoading ? (
+            /* Loading State: Skeletons for Cards and Table */
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <CardSkeleton key={i} />
+                ))}
               </div>
-
-              <div className="bg-white rounded-xl shadow p-6">
-                <div className="flex items-center">
-                  <div className="bg-green-100 p-3 rounded-lg mr-4">
-                    <span className="text-green-600 text-xl">✅</span>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Published</p>
-                    <p className="text-2xl font-bold">{statistics.published_modules}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow p-6">
-                <div className="flex items-center">
-                  <div className="bg-blue-100 p-3 rounded-lg mr-4">
-                    <span className="text-blue-600 text-xl">🏫</span>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Grade Levels</p>
-                    <p className="text-2xl font-bold">{statistics.grade_levels}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-xl shadow p-6">
-                <div className="flex items-center">
-                  <div className="bg-yellow-100 p-3 rounded-lg mr-4">
-                    <span className="text-yellow-600 text-xl">📝</span>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-500">Content Items</p>
-                    <p className="text-2xl font-bold">{statistics.total_content_items}</p>
-                  </div>
-                </div>
-              </div>
+              <TableSkeleton rows={5} columns={6} />
             </div>
-          </div>
-        )}
-
-        {/* Filters and Search */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="bg-white rounded-xl shadow p-6 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Search */}
-              <div className="md:col-span-2">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-gray-400">🔍</span>
+          ) : error ? (
+            /* Error State */
+            <ErrorMessage
+              error={error}
+              title="Failed to load modules"
+              onRetry={fetchModules}
+              showDetails={process.env.NODE_ENV === 'development'}
+            />
+          ) : (
+            /* Success State */
+            <div className="space-y-6">
+              {/* Statistics Cards */}
+              {statistics && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  <div className="bg-white rounded-xl shadow p-6">
+                    <div className="flex items-center">
+                      <div className="bg-purple-100 p-3 rounded-lg mr-4">
+                        <span className="text-purple-600 text-xl">📚</span>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Total Modules</p>
+                        <p className="text-2xl font-bold">{statistics.total_modules}</p>
+                      </div>
+                    </div>
                   </div>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search modules..."
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                  />
+
+                  <div className="bg-white rounded-xl shadow p-6">
+                    <div className="flex items-center">
+                      <div className="bg-green-100 p-3 rounded-lg mr-4">
+                        <span className="text-green-600 text-xl">✅</span>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Published</p>
+                        <p className="text-2xl font-bold">{statistics.published_modules}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl shadow p-6">
+                    <div className="flex items-center">
+                      <div className="bg-blue-100 p-3 rounded-lg mr-4">
+                        <span className="text-blue-600 text-xl">🏫</span>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Grade Levels</p>
+                        <p className="text-2xl font-bold">{statistics.grade_levels}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl shadow p-6">
+                    <div className="flex items-center">
+                      <div className="bg-yellow-100 p-3 rounded-lg mr-4">
+                        <span className="text-yellow-600 text-xl">📝</span>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-500">Content Items</p>
+                        <p className="text-2xl font-bold">{statistics.total_content_items}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Filters and Search */}
+              <div className="bg-white rounded-xl shadow p-6">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  {/* Search */}
+                  <div className="md:col-span-2">
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <span className="text-gray-400">🔍</span>
+                      </div>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search modules..."
+                        className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Grade Level Filter */}
+                  <div>
+                    <select
+                      value={filters.grade_level || 'all'}
+                      onChange={(e) => handleFilterChange('grade_level', e.target.value)}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    >
+                      <option value="all">All Grade Levels</option>
+                      <option value="Grade 6">Grade 6</option>
+                      <option value="Grade 7">Grade 7</option>
+                      <option value="Grade 8">Grade 8</option>
+                    </select>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div>
+                    <select
+                      value={filters.is_published === undefined ? 'all' : filters.is_published.toString()}
+                      onChange={(e) => handleFilterChange('is_published', e.target.value === 'all' ? undefined : e.target.value === 'true')}
+                      className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                    >
+                      <option value="all">All Status</option>
+                      <option value="true">Published</option>
+                      <option value="false">Unpublished</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              {/* Grade Level Filter */}
-              <div>
-                <select
-                  value={filters.grade_level || 'all'}
-                  onChange={(e) => handleFilterChange('grade_level', e.target.value)}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                >
-                  <option value="all">All Grade Levels</option>
-                  <option value="Grade 6">Grade 6</option>
-                  <option value="Grade 7">Grade 7</option>
-                  <option value="Grade 8">Grade 8</option>
-                </select>
-              </div>
+              {/* Modules Table */}
+              <div className="bg-white rounded-xl shadow overflow-hidden">
+                {filteredModules.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <div className="text-gray-400 text-4xl mb-4">📚</div>
+                    <p className="text-gray-800 mb-2">No modules found</p>
+                    <p className="text-gray-600 mb-4">
+                      {searchQuery ? 'Try a different search' : 'Create your first module to get started'}
+                    </p>
+                    <button
+                      onClick={handleCreate}
+                      className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow"
+                    >
+                      Create New Module
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead className="bg-gray-50">
+                          <tr>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Module Name
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Grade Level
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Units/Content
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Status
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Created
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="bg-white divide-y divide-gray-200">
+                          {(Array.isArray(filteredModules) ? filteredModules : []).map((module) => (
+                            <tr key={module.module_id} className="hover:bg-gray-50">
+                              <td className="px-6 py-4">
+                                <div>
+                                  <div className="font-medium text-gray-900">{module.module_name}</div>
+                                  {module.description && (
+                                    <div className="text-sm text-gray-500 mt-1">
+                                      {module.description.length > 100
+                                        ? `${module.description.substring(0, 100)}...`
+                                        : module.description}
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                  {module.grade_level}
+                                </span>
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-500">
+                                <div className="flex items-center space-x-4">
+                                  <span>{module.unit_count} units</span>
+                                  <span>•</span>
+                                  <span>{module.content_count} content items</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <button
+                                  onClick={() => handleTogglePublish(module.module_id, module.is_published)}
+                                  className={`px-3 py-1 text-xs font-semibold rounded-full transition-colors ${
+                                    module.is_published
+                                      ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                                      : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                                  }`}
+                                >
+                                  {module.is_published ? 'Published' : 'Unpublished'}
+                                </button>
+                              </td>
+                              <td className="px-6 py-4 text-sm text-gray-500">
+                                <div>{formatDate(module.created_at)}</div>
+                                <div className="text-xs">by {module.created_by_name}</div>
+                              </td>
+                              <td className="px-6 py-4 text-sm font-medium">
+                                <div className="flex space-x-2">
+                                  <button
+                                    onClick={() => handleEdit(module)}
+                                    className="text-blue-600 hover:text-blue-900"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    onClick={() => router.push(`/admin/modules/${module.module_id}/units`)}
+                                    className="text-green-600 hover:text-green-900"
+                                  >
+                                    View Units
+                                  </button>
+                                  <button
+                                    onClick={() => handleDelete(module.module_id)}
+                                    className="text-red-600 hover:text-red-900"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
 
-              {/* Status Filter */}
-              <div>
-                <select
-                  value={filters.is_published === undefined ? 'all' : filters.is_published.toString()}
-                  onChange={(e) => handleFilterChange('is_published', e.target.value === 'all' ? undefined : e.target.value === 'true')}
-                  className="block w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
-                >
-                  <option value="all">All Status</option>
-                  <option value="true">Published</option>
-                  <option value="false">Unpublished</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Modules Table */}
-          <div className="bg-white rounded-xl shadow overflow-hidden">
-            {isLoading ? (
-              <div className="p-8 text-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
-                <p className="mt-4 text-gray-600">Loading modules...</p>
-              </div>
-            ) : error ? (
-              <div className="p-8 text-center">
-                <div className="text-red-600 mb-4">❌</div>
-                <p className="text-gray-800 mb-2">Failed to load modules</p>
-                <p className="text-gray-600 mb-4">{error}</p>
-                <button
-                  onClick={fetchModules}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg"
-                >
-                  Try Again
-                </button>
-              </div>
-            ) : filteredModules.length === 0 ? (
-              <div className="p-8 text-center">
-                <div className="text-gray-400 text-4xl mb-4">📚</div>
-                <p className="text-gray-800 mb-2">No modules found</p>
-                <p className="text-gray-600 mb-4">
-                  {searchQuery ? 'Try a different search' : 'Create your first module to get started'}
-                </p>
-                <button
-                  onClick={handleCreate}
-                  className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-lg shadow"
-                >
-                  Create New Module
-                </button>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Module Name
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Grade Level
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Units/Content
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Created
-                      </th>
-                      <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {(Array.isArray(filteredModules) ? filteredModules : []).map((module) => (
-                      <tr key={module.module_id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4">
-                          <div>
-                            <div className="font-medium text-gray-900">{module.module_name}</div>
-                            {module.description && (
-                              <div className="text-sm text-gray-500 mt-1">
-                                {module.description.length > 100
-                                  ? `${module.description.substring(0, 100)}...`
-                                  : module.description}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                            {module.grade_level}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">
-                          <div className="flex items-center space-x-4">
-                            <span>{module.unit_count} units</span>
-                            <span>•</span>
-                            <span>{module.content_count} content items</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <button
-                            onClick={() => handleTogglePublish(module.module_id, module.is_published)}
-                            className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                              module.is_published
-                                ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                                : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
-                            }`}
-                          >
-                            {module.is_published ? 'Published' : 'Unpublished'}
+                    {/* Pagination */}
+                    <div className="px-6 py-4 border-t border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm text-gray-500">
+                          Showing <span className="font-medium">{filteredModules.length}</span> of{' '}
+                          <span className="font-medium">{modules.length}</span> modules
+                        </div>
+                        <div className="flex space-x-2">
+                          <button className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50 hover:bg-gray-50">
+                            Previous
                           </button>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-500">
-                          <div>{formatDate(module.created_at)}</div>
-                          <div className="text-xs">by {module.created_by_name}</div>
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleEdit(module)}
-                              className="text-blue-600 hover:text-blue-900"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => router.push(`/admin/modules/${module.module_id}/units`)}
-                              className="text-green-600 hover:text-green-900"
-                            >
-                              View Units
-                            </button>
-                            <button
-                              onClick={() => handleDelete(module.module_id)}
-                              className="text-red-600 hover:text-red-900"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          <button className="px-3 py-1 border border-gray-300 rounded text-sm hover:bg-gray-50">
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
-            )}
-
-            {/* Pagination */}
-            {filteredModules.length > 0 && (
-              <div className="px-6 py-4 border-t border-gray-200">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-500">
-                    Showing <span className="font-medium">{filteredModules.length}</span> of{' '}
-                    <span className="font-medium">{modules.length}</span> modules
-                  </div>
-                  <div className="flex space-x-2">
-                    <button className="px-3 py-1 border border-gray-300 rounded text-sm disabled:opacity-50">
-                      Previous
-                    </button>
-                    <button className="px-3 py-1 border border-gray-300 rounded text-sm">
-                      Next
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
+            </div>
+          )}
+        </main>
       </div>
 
       {/* Create/Edit Modal */}
