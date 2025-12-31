@@ -14,49 +14,59 @@ class Database {
       connectionLimit: 10,
       queueLimit: 0,
       enableKeepAlive: true,
-      keepAliveInitialDelay: 0,
+      keepAliveInitialDelay: 0
     };
+    this.isConnected = false;
   }
 
   async connect() {
-    if (this.pool) {
-      console.log('✅ MySQL already connected');
-      return this.pool;
-    }
-
     try {
-      this.pool = mysql.createPool(this.config);
+      if (this.isConnected && this.pool) {
+        return this.pool;
+      }
 
+      console.log('🔌 Connecting to MySQL...');
+      this.pool = mysql.createPool(this.config);
+      
       // Test connection
       const connection = await this.pool.getConnection();
       console.log('✅ MySQL Connected Successfully!');
       console.log(`   Database: ${this.config.database}`);
       console.log(`   Host: ${this.config.host}:${this.config.port}`);
-
+      
       connection.release();
+      this.isConnected = true;
       return this.pool;
     } catch (error) {
       console.error('❌ MySQL Connection Failed:', error.message);
       console.error('💡 Troubleshooting:');
-      console.error('   1. Start XAMPP / MySQL');
-      console.error('   2. Check DB credentials in .env');
-      console.error('   3. Make sure database exists');
+      console.error('   1. Make sure XAMPP MySQL is running');
+      console.error('   2. Check if database "academic_system" exists');
+      console.error('   3. Try: CREATE DATABASE academic_system;');
       throw error;
     }
   }
 
   async query(sql, params = []) {
-    if (!this.pool) {
-      await this.connect();
-    }
-
+    let processedParams = [];
     try {
-      const [results] = await this.pool.execute(sql, params);
+      if (!this.pool || !this.isConnected) {
+        await this.connect();
+      }
+      console.log(`📊 Executing SQL: ${sql.substring(0, 100)}...`);
+      // Convert JSON objects to strings for MySQL
+      processedParams = params.map(param => {
+        if (typeof param === 'object' && param !== null) {
+          return JSON.stringify(param);
+        }
+        return param;
+      });
+      const [results] = await this.pool.execute(sql, processedParams);
       return results;
     } catch (error) {
-      console.error('❌ MySQL Query Error:', error.message);
+      console.error('❌ Database Query Error:', error.message);
       console.error('   SQL:', sql);
-      console.error('   Params:', params);
+      console.error('   Params:', processedParams);
       throw error;
     }
   }
@@ -64,13 +74,14 @@ class Database {
   async close() {
     if (this.pool) {
       await this.pool.end();
-      this.pool = null;
+      this.isConnected = false;
       console.log('✅ MySQL Connection Closed');
     }
   }
 }
 
-// Singleton instance
+// Create singleton instance
 const database = new Database();
 
+// Export the instance
 module.exports = database;

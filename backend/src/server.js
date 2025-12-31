@@ -3,7 +3,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
-const dotenv = require('path');
+const cookieParser = require('cookie-parser'); // Added cookie-parser
+const dotenv = require('dotenv'); // Fixed: changed from 'path' to 'dotenv'
 const path = require('path');
 
 // Load environment variables
@@ -41,6 +42,11 @@ const allowedOrigins = [
 app.use(helmet()); // Security headers
 
 // ======================
+// COOKIE PARSER (Added after helmet)
+// ======================
+app.use(cookieParser()); // Parse cookies
+
+// ======================
 // CORS CONFIGURATION
 // ======================
 const corsOptions = {
@@ -59,7 +65,7 @@ const corsOptions = {
       callback(new Error(`Origin ${origin} not allowed by CORS`));
     }
   },
-  credentials: true,
+  credentials: true, // This is important for cookies
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: [
     'Content-Type',
@@ -68,9 +74,11 @@ const corsOptions = {
     'Accept',
     'Origin',
     'Access-Control-Request-Method',
-    'Access-Control-Request-Headers'
+    'Access-Control-Request-Headers',
+    'Cookie', // Added to allow cookies in headers if needed
+    'Set-Cookie' // Added to allow set-cookie headers
   ],
-  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range', 'Set-Cookie'], // Added Set-Cookie
   maxAge: 86400, // 24 hours
   preflightContinue: false,
   optionsSuccessStatus: 204
@@ -120,6 +128,11 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 app.use((req, res, next) => {
   const start = Date.now();
   
+  // Log cookies if present (useful for debugging)
+  if (req.cookies && Object.keys(req.cookies).length > 0) {
+    logger.debug(`Cookies received: ${JSON.stringify(req.cookies)}`);
+  }
+  
   // Log when response finishes
   res.on('finish', () => {
     const duration = Date.now() - start;
@@ -135,6 +148,9 @@ app.use((req, res, next) => {
 app.get('/api/health', (req, res) => {
   const origin = req.headers.origin || 'Not specified';
   const isOriginAllowed = allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development';
+  
+  // Get cookies info
+  const cookies = req.cookies || {};
   
   res.status(200).json({
     success: true,
@@ -158,7 +174,13 @@ app.get('/api/health', (req, res) => {
     cors: {
       origin: origin,
       allowed: isOriginAllowed,
-      allowedOrigins: allowedOrigins
+      allowedOrigins: allowedOrigins,
+      credentials: true
+    },
+    cookies: {
+      enabled: true,
+      count: Object.keys(cookies).length,
+      keys: Object.keys(cookies)
     },
     server: {
       port: process.env.PORT || 5000,
@@ -179,7 +201,12 @@ app.get('/', (req, res) => {
     frontend: process.env.FRONTEND_URL || 'http://localhost:3000',
     version: '1.0.0',
     cors: {
-      allowedOrigins: allowedOrigins
+      allowedOrigins: allowedOrigins,
+      credentials: true
+    },
+    features: {
+      cookies: 'Enabled',
+      authentication: 'Available via /api/auth'
     }
   });
 });
@@ -237,6 +264,8 @@ const startServer = async () => {
       console.log(`📊 Environment: ${process.env.NODE_ENV}`);
       console.log(`📚 Health Check: http://localhost:${PORT}/api/health`);
       console.log(`🎯 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
+      console.log(`🍪 Cookie Parser: Enabled`);
+      console.log(`🔐 CORS with Credentials: Enabled`);
       console.log(`⏰ Started at: ${new Date().toLocaleString()}`);
       console.log(`🌐 CORS Origins: ${allowedOrigins.join(', ')}`);
       console.log('='.repeat(60));
