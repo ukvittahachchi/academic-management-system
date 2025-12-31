@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/auth.controller');
-const { authenticate, studentOnly, teacherOnly, adminOnly } = require('../middlewares/auth.middleware');
+const { authenticate, tryAuthenticate, studentOnly, teacherOnly, adminOnly } = require('../middlewares/auth.middleware');
 
 // ======================
 // PUBLIC ROUTES
@@ -25,7 +25,7 @@ router.post('/refresh', authController.refreshToken);
 // @route   GET /api/auth/check
 // @desc    Check authentication status
 // @access  Public (returns auth status)
-router.get('/check', authController.checkAuth);
+router.get('/check', tryAuthenticate, authController.checkAuth);
 
 // ======================
 // PROTECTED ROUTES

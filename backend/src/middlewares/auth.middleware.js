@@ -272,8 +272,53 @@ const checkSchoolAccess = (schoolIdParam = 'schoolId') => {
   };
 };
 
+// ======================
+// OPTIONAL AUTHENTICATION MIDDLEWARE
+// ======================
+const tryAuthenticate = async (req, res, next) => {
+  try {
+    // Get token from header or cookie
+    const token = jwtService.getTokenFromHeader(req) || req.cookies?.accessToken;
+
+    if (!token) {
+      return next();
+    }
+
+    // Verify token
+    const { valid, decoded } = jwtService.verifyAccessToken(token);
+
+    if (!valid) {
+      return next();
+    }
+
+    // Verify user still exists and is active
+    const user = await User.findById(decoded.userId);
+    if (!user || !user.is_active) {
+      return next();
+    }
+
+    // Attach user data to request
+    req.user = {
+      userId: decoded.userId,
+      username: decoded.username,
+      role: decoded.role,
+      schoolId: decoded.schoolId,
+      classGrade: decoded.classGrade,
+      subject: decoded.subject,
+      fullName: user.full_name,
+      permissions: getUserPermissions(decoded.role)
+    };
+
+    next();
+  } catch (error) {
+    // On any error, just proceed as unauthenticated
+    next();
+  }
+};
+
 module.exports = {
   authenticate,
+  tryAuthenticate,
   authorize,
   studentOnly,
   teacherOnly,

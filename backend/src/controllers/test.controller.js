@@ -4,8 +4,8 @@ class TestController {
   // Test database connection
   async testDatabase(req, res) {
     try {
-      const [result] = await database.query('SELECT 1 + 1 AS solution');
-      
+      const result = await database.query('SELECT 1 + 1 AS solution');
+
       res.status(200).json({
         success: true,
         message: 'Database connection test successful',
@@ -28,10 +28,10 @@ class TestController {
   async getSystemInfo(req, res) {
     try {
       // Get MySQL version
-      const [mysqlVersion] = await database.query('SELECT VERSION() as version');
-      
+      const mysqlVersion = await database.query('SELECT VERSION() as version');
+
       // Get table counts
-      const [tables] = await database.query(`
+      const tables = await database.query(`
         SELECT TABLE_NAME, TABLE_ROWS 
         FROM information_schema.tables 
         WHERE table_schema = ?

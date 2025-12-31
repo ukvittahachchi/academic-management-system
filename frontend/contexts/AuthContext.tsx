@@ -35,6 +35,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading: true,
     error: null,
   });
+
+  // Debug log for auth state
+  useEffect(() => {
+    console.log('[AuthContext] authState:', authState);
+  }, [authState]);
   
   const router = useRouter();
   const pathname = usePathname();
@@ -69,6 +74,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [authState.isAuthenticated]);
 
   const checkAuth = async () => {
+    console.log('[AuthContext] checkAuth called');
     try {
       // Don't set global loading state on every route change if we are already authenticated.
       // This prevents UI flickering. We only set it if we don't have a user yet.
@@ -106,6 +112,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const login = async (username: string, password: string) => {
+    console.log('[AuthContext] login called');
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
       
@@ -154,6 +161,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = async () => {
+    console.log('[AuthContext] logout called');
     try {
       setAuthState(prev => ({ ...prev, isLoading: true }));
       await apiClient.logout();
@@ -172,6 +180,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const refreshToken = async () => {
+    console.log('[AuthContext] refreshToken called');
     try {
       await apiClient.refreshToken();
       // Token refreshed successfully, cookies updated automatically

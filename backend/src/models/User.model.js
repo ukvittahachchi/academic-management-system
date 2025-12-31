@@ -46,7 +46,7 @@ class User {
     ];
 
     try {
-      const [result] = await database.query(sql, params);
+      const result = await database.query(sql, params);
       return this.findById(result.insertId);
     } catch (error) {
       console.error('Create User Error:', error);
@@ -154,7 +154,7 @@ class User {
         WHERE username = ? 
           AND account_locked_until > NOW()
       `;
-      const [result] = await database.query(sql, [username]);
+      const result = await database.query(sql, [username]);
       return result && result.length > 0;
     } catch (error) {
       console.error('Check Account Locked Error:', error);
@@ -173,7 +173,7 @@ class User {
         WHERE username = ? 
           AND account_locked_until > NOW()
       `;
-      const [result] = await database.query(sql, [username]);
+      const result = await database.query(sql, [username]);
       return result && result.length > 0 ? result[0].seconds_remaining : 0;
     } catch (error) {
       console.error('Get Lock Time Error:', error);
@@ -199,7 +199,7 @@ class User {
             updated_at = CURRENT_TIMESTAMP
         WHERE user_id = ?
       `;
-      
+
       await database.query(sql, [password_hash, userId]);
       return true;
     } catch (error) {
@@ -214,7 +214,7 @@ class User {
   static async getUserRole(userId) {
     try {
       const sql = `SELECT role FROM users WHERE user_id = ?`;
-      const [result] = await database.query(sql, [userId]);
+      const result = await database.query(sql, [userId]);
       return result && result.length > 0 ? result[0].role : null;
     } catch (error) {
       console.error('Get User Role Error:', error);
@@ -232,10 +232,10 @@ class User {
         (user_id, activity_type, ip_address, user_agent, details)
         VALUES (?, ?, ?, ?, ?)
       `;
-      
+
       // Convert details object to string if it exists
       const detailsString = details ? JSON.stringify(details) : null;
-      
+
       await database.query(sql, [userId, activityType, ipAddress, userAgent, detailsString]);
     } catch (error) {
       console.error('Log Auth Activity Error:', error);
@@ -259,7 +259,7 @@ class User {
           AND is_active = TRUE
         ORDER BY roll_number
       `;
-      const [students] = await database.query(sql, [schoolId, classGrade]);
+      const students = await database.query(sql, [schoolId, classGrade]);
       return students || [];
     } catch (error) {
       console.error('Get Students By Class Error:', error);
@@ -283,7 +283,7 @@ class User {
           AND is_active = TRUE
         ORDER BY full_name
       `;
-      const [teachers] = await database.query(sql, [schoolId, subject]);
+      const teachers = await database.query(sql, [schoolId, subject]);
       return teachers || [];
     } catch (error) {
       console.error('Get Teachers By Subject Error:', error);

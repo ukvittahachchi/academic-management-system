@@ -1,163 +1,211 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import Link from 'next/link';
 
+export default function LoginPage() {
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const { login, error } = useAuth();
+  const router = useRouter();
 
-export default function Home() {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    try {
+      await login(username, password);
+      // Navigation happens in the auth context after successful login
+    } catch (error) {
+      // Error is already handled in the auth context
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Demo credentials for testing
+  const useDemoCredentials = (role: 'student' | 'teacher' | 'admin') => {
+    switch (role) {
+      case 'student':
+        setUsername('test_student');
+        setPassword('password123');
+        break;
+      case 'teacher':
+        setUsername('test_teacher');
+        setPassword('password123');
+        break;
+      case 'admin':
+        setUsername('test_admin');
+        setPassword('password123');
+        break;
+    }
+  };
+
   return (
-    <div className="py-8">
-      <div className="text-center mb-10">
-        <h1 className="text-4xl font-bold text-gray-800 mb-3">
-          Welcome to ICT Academic System
-        </h1>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          A simple, easy-to-use platform for Grade 6 students to learn ICT.
-          No email required - just your username and password!
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-        {/* Student Card */}
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
-          <div className="flex items-center mb-4">
-            <div className="bg-green-100 p-3 rounded-full mr-4">
-              <span className="text-green-600 text-2xl">👨‍🎓</span>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-100 p-4">
+      <div className="max-w-md w-full">
+        {/* Login Card */}
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+              <span className="text-3xl">🎓</span>
             </div>
-            <h2 className="text-xl font-bold text-gray-800">For Students</h2>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+              Welcome Back
+            </h1>
+            <p className="text-gray-600">
+              Sign in to your ICT Academic System account
+            </p>
           </div>
-          <ul className="space-y-2 mb-6 text-gray-600">
-            <li>✓ View ICT learning modules</li>
-            <li>✓ Watch videos & read materials</li>
-            <li>✓ Take MCQ quizzes</li>
-            <li>✓ See your grades instantly</li>
-            <li>✓ Track your progress</li>
-          </ul>
-          <Link 
-            href="/student" 
-            className="block w-full bg-green-500 hover:bg-green-600 text-white text-center py-2 rounded-lg font-medium transition"
-          >
-            Student Login
-          </Link>
-        </div>
 
-        {/* Teacher Card */}
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
-          <div className="flex items-center mb-4">
-            <div className="bg-blue-100 p-3 rounded-full mr-4">
-              <span className="text-blue-600 text-2xl">👩‍🏫</span>
+          {/* Login Form */}
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Username Input */}
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
+                Username
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-gray-400">👤</span>
+                </div>
+                <input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                  placeholder="Enter your username"
+                  required
+                  disabled={isSubmitting}
+                />
+              </div>
+              <p className="mt-1 text-sm text-gray-500">
+                Students: Use your roll number as username
+              </p>
             </div>
-            <h2 className="text-xl font-bold text-gray-800">For Teachers</h2>
-          </div>
-          <ul className="space-y-2 mb-6 text-gray-600">
-            <li>✓ Monitor student progress</li>
-            <li>✓ View class performance</li>
-            <li>✓ Export reports to Excel</li>
-            <li>✓ Identify learning gaps</li>
-            <li>✓ Guide students better</li>
-          </ul>
-          <Link 
-            href="/teacher" 
-            className="block w-full bg-blue-500 hover:bg-blue-600 text-white text-center py-2 rounded-lg font-medium transition"
-          >
-            Teacher Login
-          </Link>
-        </div>
 
-
-
-        {/* Admin Card */}
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
-          <div className="flex items-center mb-4">
-            <div className="bg-purple-100 p-3 rounded-full mr-4">
-              <span className="text-purple-600 text-2xl">👨‍💼</span>
+            {/* Password Input */}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+                Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span className="text-gray-400">🔒</span>
+                </div>
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="block w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                  placeholder="Enter your password"
+                  required
+                  disabled={isSubmitting}
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  <span className="text-gray-400 hover:text-gray-600">
+                    {showPassword ? '🙈' : '👁️'}
+                  </span>
+                </button>
+              </div>
             </div>
-            <h2 className="text-xl font-bold text-gray-800">For Admin</h2>
-          </div>
-          <ul className="space-y-2 mb-6 text-gray-600">
-            <li>✓ Create ICT modules</li>
-            <li>✓ Manage users & classes</li>
-            <li>✓ Upload learning materials</li>
-            <li>✓ System configuration</li>
-            <li>✓ View all reports</li>
-          </ul>
-          <Link 
-            href="/admin" 
-            className="block w-full bg-purple-500 hover:bg-purple-600 text-white text-center py-2 rounded-lg font-medium transition"
-          >
-            Admin Login
-          </Link>
-        </div>
-      </div>
-      <div className="bg-gray-50 border border-gray-200 rounded-xl p-6 max-w-2xl mx-auto mt-8">
-  <h3 className="font-bold text-gray-800 mb-3">Development Dashboard</h3>
-  <div className="flex flex-wrap gap-3">
-    <a 
-      href="/test" 
-      className="px-4 py-2 bg-gray-800 hover:bg-gray-900 text-white rounded-lg font-medium"
-    >
-      🔧 Run Connection Tests
-    </a>
-    <a 
-      href="http://localhost:5000/api/health" 
-      target="_blank"
-      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium"
-    >
-      📊 API Health Check
-    </a>
-    <a 
-      href="http://localhost/phpmyadmin" 
-      target="_blank"
-      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium"
-    >
-      🗄️ phpMyAdmin
-    </a>
-  </div>
-</div>
 
-      {/* API Status Check */}
-      <div className="bg-white rounded-xl shadow p-6 max-w-2xl mx-auto">
-        <h3 className="text-lg font-bold text-gray-800 mb-4">System Status</h3>
-        <div className="space-y-3">
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
-            <span className="text-gray-700">Frontend: Running on localhost:3000</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
-            <span className="text-gray-700">Backend API: Ready on localhost:5000</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
-            <span className="text-gray-700">MySQL Database: Connected</span>
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
-            <span className="text-gray-700">MongoDB Atlas: Connected</span>
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+                <div className="flex items-center">
+                  <span className="mr-2">❌</span>
+                  <span className="text-sm">{error}</span>
+                </div>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 px-4 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              {isSubmitting ? (
+                <span className="flex items-center justify-center">
+                  <span className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></span>
+                  Signing in...
+                </span>
+              ) : (
+                'Sign In'
+              )}
+            </button>
+
+            {/* Demo Credentials Section */}
+            <div className="pt-6 border-t border-gray-200">
+              <p className="text-center text-sm text-gray-600 mb-4">
+                Want to test? Use demo credentials:
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={() => useDemoCredentials('student')}
+                  className="py-2 px-3 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-sm font-medium transition"
+                >
+                  👨‍🎓 Student
+                </button>
+                <button
+                  type="button"
+                  onClick={() => useDemoCredentials('teacher')}
+                  className="py-2 px-3 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium transition"
+                >
+                  👩‍🏫 Teacher
+                </button>
+                <button
+                  type="button"
+                  onClick={() => useDemoCredentials('admin')}
+                  className="py-2 px-3 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-sm font-medium transition"
+                >
+                  👨‍💼 Admin
+                </button>
+              </div>
+            </div>
+          </form>
+
+          {/* Footer */}
+          <div className="mt-8 pt-6 border-t border-gray-200 text-center">
+            <p className="text-sm text-gray-600">
+              Don't have an account?{' '}
+              <span className="text-gray-500">
+                Contact your school administrator
+              </span>
+            </p>
+            <div className="mt-4">
+              <Link href="/" className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                ← Back to Home
+              </Link>
+            </div>
           </div>
         </div>
-        
-        <div className="mt-6 pt-6 border-t">
-          <h4 className="font-medium text-gray-700 mb-2">Quick Links:</h4>
-          <div className="flex flex-wrap gap-2">
-            <a 
-              href="http://localhost:5000/api/health" 
-              target="_blank" 
-              className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
-            >
-              API Health Check
-            </a>
-            <a 
-              href="http://localhost/phpmyadmin" 
-              target="_blank" 
-              className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
-            >
-              phpMyAdmin
-            </a>
-            <a 
-              href="https://cloud.mongodb.com" 
-              target="_blank" 
-              className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded text-sm"
-            >
-              MongoDB Atlas
-            </a>
+
+        {/* Security Notice */}
+        <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-start">
+            <span className="text-yellow-600 mr-2">🔒</span>
+            <div className="text-sm text-yellow-700">
+              <p className="font-medium">Secure Authentication</p>
+              <p className="mt-1">
+                Your login credentials are protected with HTTPS and stored securely using HTTP-only cookies.
+                No email required for students.
+              </p>
+            </div>
           </div>
         </div>
       </div>
