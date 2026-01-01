@@ -6,14 +6,16 @@ import { StudentRoute } from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api-client';
 import { Module } from '@/lib/types/module';
+import { Unit } from '@/lib/types/navigation';
 import { getErrorMessage, formatDate } from '@/lib/validation';
 
 export default function ModuleDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
-  
+
   const [module, setModule] = useState<Module | null>(null);
+  const [units, setUnits] = useState<Unit[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'units' | 'progress'>('overview');
@@ -30,9 +32,19 @@ export default function ModuleDetailPage() {
     try {
       setIsLoading(true);
       setError(null);
-      
+
       const response = await apiClient.getModule(parseInt(moduleId));
       setModule(response.data);
+
+      try {
+        const hierarchyResponse = await apiClient.getModuleHierarchy(parseInt(moduleId));
+        if (hierarchyResponse.success) {
+          setUnits(hierarchyResponse.data.units);
+        }
+      } catch (err) {
+        console.error('Failed to fetch units:', err);
+        // Don't block the main module load if units fail, but maybe log it
+      }
     } catch (error) {
       console.error('Failed to fetch module:', error);
       setError(getErrorMessage(error));
@@ -42,8 +54,7 @@ export default function ModuleDetailPage() {
   };
 
   const handleStartLearning = () => {
-    // Will navigate to first unit when implemented
-    alert('Starting learning module. This will navigate to the first unit.');
+    router.push(`/student/modules/${moduleId}/navigation`);
   };
 
   if (isLoading) {
@@ -129,7 +140,7 @@ export default function ModuleDetailPage() {
                   className="px-6 py-3 bg-white text-green-700 font-bold rounded-lg hover:bg-green-50 transition"
                 >
                   {module.progress_percentage === 0 ? 'Start Learning' :
-                   module.progress_percentage === 100 ? 'Review Again' : 'Continue Learning'}
+                    module.progress_percentage === 100 ? 'Review Again' : 'Continue Learning'}
                 </button>
               </div>
             </div>
@@ -160,31 +171,28 @@ export default function ModuleDetailPage() {
             <nav className="flex space-x-8">
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'overview'
-                    ? 'border-green-500 text-green-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'overview'
+                  ? 'border-green-500 text-green-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
               >
                 Overview
               </button>
               <button
                 onClick={() => setActiveTab('units')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'units'
-                    ? 'border-green-500 text-green-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'units'
+                  ? 'border-green-500 text-green-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
               >
                 Units ({module.unit_count})
               </button>
               <button
                 onClick={() => setActiveTab('progress')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === 'progress'
-                    ? 'border-green-500 text-green-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'progress'
+                  ? 'border-green-500 text-green-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
               >
                 My Progress
               </button>
@@ -301,22 +309,58 @@ export default function ModuleDetailPage() {
               <h2 className="text-xl font-bold text-gray-800 mb-6">Units in This Module</h2>
               <div className="space-y-4">
                 {/* This will be populated when we implement units */}
-                <div className="text-center py-12">
-                  <div className="text-gray-400 text-5xl mb-6">📖</div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-3">
-                    Units Coming Soon
-                  </h3>
-                  <p className="text-gray-600 max-w-md mx-auto mb-8">
-                    The units for this module are being prepared by your teacher.
-                    Check back soon to start learning!
-                  </p>
-                  <button
-                    onClick={() => setActiveTab('overview')}
-                    className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg"
-                  >
-                    Back to Overview
-                  </button>
-                </div>
+                {units.length > 0 ? (
+                  <div className="space-y-4">
+                    {units.map((unit) => (
+                      <div key={unit.unit_id} className="border border-gray-200 rounded-lg p-4 hover:border-green-500 transition-colors">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <span className="text-xs font-semibold text-green-600 uppercase tracking-wider">
+                              Unit {unit.unit_order}
+                            </span>
+                            <h3 className="text-lg font-bold text-gray-800">{unit.unit_name}</h3>
+                          </div>
+                          {unit.progress_percentage !== undefined && unit.progress_percentage > 0 && (
+                            <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-medium">
+                              {unit.progress_percentage}%
+                            </span>
+                          )}
+                        </div>
+
+                        <p className="text-gray-600 mb-4 text-sm line-clamp-2">{unit.description}</p>
+
+                        <div className="flex items-center justify-between mt-4">
+                          <div className="text-sm text-gray-500">
+                            {unit.total_parts} Lessons • {unit.estimated_time_minutes || 30} mins
+                          </div>
+                          <button
+                            onClick={() => router.push(`/student/modules/${moduleId}/navigation`)}
+                            className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center"
+                          >
+                            Go to Class <span className="ml-1">→</span>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-gray-400 text-5xl mb-6">📖</div>
+                    <h3 className="text-xl font-semibold text-gray-800 mb-3">
+                      Units Coming Soon
+                    </h3>
+                    <p className="text-gray-600 max-w-md mx-auto mb-8">
+                      The units for this module are being prepared by your teacher.
+                      Check back soon to start learning!
+                    </p>
+                    <button
+                      onClick={() => setActiveTab('overview')}
+                      className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg"
+                    >
+                      Back to Overview
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}

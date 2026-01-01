@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser'); // Added cookie-parser
 const dotenv = require('dotenv'); // Fixed: changed from 'path' to 'dotenv'
 const path = require('path');
 const moduleRoutes = require('./routes/module.routes');
+const navigationRoutes = require('./routes/navigation.routes');
 
 // Load environment variables
 require('dotenv').config();
@@ -218,6 +219,7 @@ app.get('/', (req, res) => {
 app.use('/api/test', testRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/modules', moduleRoutes);
+app.use('/api/navigation', navigationRoutes);
 
 // ======================
 // 404 NOT FOUND HANDLER

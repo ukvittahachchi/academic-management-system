@@ -8,6 +8,16 @@ import {
   ModuleStatistics 
 } from './types/module';
 
+// New imports for Navigation functionality
+import { 
+  ModuleHierarchy, 
+  Unit, 
+  LearningPart, 
+  StudentProgress, 
+  ProgressUpdate, 
+  BookmarkData 
+} from './types/navigation';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 class ApiClient {
@@ -255,7 +265,7 @@ class ApiClient {
   }
 
   /**
-   * Search modules by text query
+   * Search modules by text query (Finds Modules)
    */
   async searchModules(query: string): Promise<{ 
     success: boolean; 
@@ -263,6 +273,129 @@ class ApiClient {
     data: Module[] 
   }> {
     return this.request(`/modules/search?query=${encodeURIComponent(query)}`);
+  }
+
+  // ======================
+  // MODULE NAVIGATION
+  // ======================
+
+  /**
+   * Get the full hierarchy (units/parts) of a specific module
+   */
+  async getModuleHierarchy(moduleId: number): Promise<{
+    success: boolean;
+    data: ModuleHierarchy;
+  }> {
+    return this.request(`/navigation/modules/${moduleId}/hierarchy`);
+  }
+
+  /**
+   * Get details for a specific unit, including its learning parts
+   */
+  async getUnitDetails(unitId: number): Promise<{
+    success: boolean;
+    data: {
+      unit: Unit;
+      parts: LearningPart[];
+      next_unit: Unit | null;
+      navigation: any;
+    };
+  }> {
+    return this.request(`/navigation/units/${unitId}`);
+  }
+
+  /**
+   * Get a specific learning part (content) with navigation context
+   */
+  async getLearningPart(partId: number): Promise<{
+    success: boolean;
+    data: {
+      part: LearningPart & { student_progress: any };
+      hierarchy: any;
+      navigation: any;
+    };
+  }> {
+    return this.request(`/navigation/parts/${partId}`);
+  }
+
+  /**
+   * Update student progress for a specific part
+   */
+  async updateProgress(partId: number, progress: ProgressUpdate): Promise<{
+    success: boolean;
+    message: string;
+    data: any;
+  }> {
+    return this.request(`/navigation/parts/${partId}/progress`, {
+      method: 'POST',
+      body: JSON.stringify(progress),
+    });
+  }
+
+  // ======================
+  // PROGRESS & BOOKMARKS
+  // ======================
+
+  /**
+   * Get overview of student progress across modules
+   */
+  async getProgressOverview(): Promise<{
+    success: boolean;
+    data: StudentProgress;
+  }> {
+    return this.request('/navigation/progress/overview');
+  }
+
+  /**
+   * Get the last accessed point to resume learning
+   */
+  async getResumePoint(): Promise<{
+    success: boolean;
+    message: string;
+    data: any;
+  }> {
+    return this.request('/navigation/resume');
+  }
+
+  /**
+   * Create a new bookmark
+   */
+  async addBookmark(bookmarkData: BookmarkData): Promise<{
+    success: boolean;
+    message: string;
+    data: { bookmark_id: number };
+  }> {
+    return this.request('/navigation/bookmarks', {
+      method: 'POST',
+      body: JSON.stringify(bookmarkData),
+    });
+  }
+
+  /**
+   * Remove a bookmark
+   */
+  async removeBookmark(bookmarkId: number): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    return this.request(`/navigation/bookmarks/${bookmarkId}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ======================
+  // CONTENT SEARCH
+  // ======================
+
+  /**
+   * Search for content *inside* a specific module
+   */
+  async searchInModule(moduleId: number, query: string): Promise<{
+    success: boolean;
+    count: number;
+    data: any[];
+  }> {
+    return this.request(`/navigation/modules/${moduleId}/search?query=${encodeURIComponent(query)}`);
   }
 }
 
