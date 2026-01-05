@@ -56,12 +56,12 @@ const corsOptions = {
   origin: (origin, callback) => {
     // Allow requests with no origin (like mobile apps, curl, postman)
     if (!origin) return callback(null, true);
-    
+
     // In development, allow all origins for easier testing
     if (process.env.NODE_ENV === 'development') {
       return callback(null, true);
     }
-    
+
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -97,7 +97,7 @@ app.options('*', cors(corsOptions));
 // ======================
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  max: 1000, // Limit each IP to 1000 requests per windowMs
   message: {
     success: false,
     message: 'Too many requests from this IP, please try again later.'
@@ -130,18 +130,18 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // ======================
 app.use((req, res, next) => {
   const start = Date.now();
-  
+
   // Log cookies if present (useful for debugging)
   if (req.cookies && Object.keys(req.cookies).length > 0) {
     logger.debug(`Cookies received: ${JSON.stringify(req.cookies)}`);
   }
-  
+
   // Log when response finishes
   res.on('finish', () => {
     const duration = Date.now() - start;
     logger.http(`${req.method} ${req.originalUrl} - ${res.statusCode} - ${duration}ms`);
   });
-  
+
   next();
 });
 
@@ -151,10 +151,10 @@ app.use((req, res, next) => {
 app.get('/api/health', (req, res) => {
   const origin = req.headers.origin || 'Not specified';
   const isOriginAllowed = allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development';
-  
+
   // Get cookies info
   const cookies = req.cookies || {};
-  
+
   res.status(200).json({
     success: true,
     status: 'OK',
@@ -263,7 +263,7 @@ const startServer = async () => {
   try {
     // Connect to databases first
     await initializeDatabases();
-    
+
     // Start Express server
     const server = app.listen(PORT, () => {
       console.log('\n' + '='.repeat(60));
@@ -290,7 +290,7 @@ const startServer = async () => {
       console.log('  POST /api/auth/register - User registration');
       console.log('='.repeat(60) + '\n');
     });
-    
+
     // Handle server errors
     server.on('error', (error) => {
       if (error.code === 'EADDRINUSE') {
@@ -302,7 +302,7 @@ const startServer = async () => {
         throw error;
       }
     });
-    
+
   } catch (error) {
     logger.error('🔥 Failed to start server:', error);
     console.error('🔥 Failed to start server:', error.message);

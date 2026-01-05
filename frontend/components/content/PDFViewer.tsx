@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Document, Page, pdfjs } from 'react-pdf';
 import { ContentMetadata } from '@/lib/types/content';
-import { setupPdfWorker } from '@/lib/pdf-setup';
+import dynamic from 'next/dynamic';
 
-// Setup worker
-setupPdfWorker();
+const PDFWrapper = dynamic(() => import('./PDFWrapper'), {
+    ssr: false,
+    loading: () => <div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div></div>
+});
 
 interface PDFViewerProps {
     content: ContentMetadata;
@@ -15,6 +16,8 @@ interface PDFViewerProps {
 }
 
 export default function PDFViewer({ content, onTimeUpdate, onComplete }: PDFViewerProps) {
+    console.log('PDFViewer rendered. Content:', content);
+    console.log('PDFViewer: Content URL:', content.content_url);
     const [numPages, setNumPages] = useState<number>(0);
     const [currentPage, setCurrentPage] = useState<number>(1);
     const [scale, setScale] = useState<number>(1.2);
@@ -23,13 +26,33 @@ export default function PDFViewer({ content, onTimeUpdate, onComplete }: PDFView
     const containerRef = useRef<HTMLDivElement>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Track time spent
+    if (!content.content_url) {
+        return (
+            <div className="flex flex-col items-center justify-center h-full bg-gray-100 rounded-lg p-8">
+                <div className="text-gray-400 text-6xl mb-4">📄</div>
+                <h3 className="text-xl font-semibold text-gray-700 mb-2">No PDF Content</h3>
+                <p className="text-gray-500 text-center max-w-md">
+                    There is no PDF file associated with this learning material yet.
+                    Please contact your instructor if you believe this is an error.
+                </p>
+            </div>
+        );
+    }
+
+    // Track time spent - Batch updates to every 30 seconds
     useEffect(() => {
+        const UPDATE_INTERVAL = 30; // seconds
+        let accumulatedTime = 0;
+
         timerRef.current = setInterval(() => {
-            if (onTimeUpdate) {
-                // We're just incrementing a counter here relative to this session
-                // The parent component handles the actual API call
-                onTimeUpdate(1);
+            accumulatedTime += 1;
+
+            // Only report to parent (and thus server) every UPDATE_INTERVAL seconds
+            if (accumulatedTime >= UPDATE_INTERVAL) {
+                if (onTimeUpdate) {
+                    onTimeUpdate(accumulatedTime);
+                    accumulatedTime = 0; // Reset after sending
+                }
             }
         }, 1000);
 
@@ -37,22 +60,22 @@ export default function PDFViewer({ content, onTimeUpdate, onComplete }: PDFView
             if (timerRef.current) {
                 clearInterval(timerRef.current);
             }
+            // Optional: send remaining time on unmount? 
+            // Often tricky with async unmounts/closures, sticking to interval for now.
         };
     }, []);
 
-    // Ensure worker is set up on mount (client-side only)
-    useEffect(() => {
-        setupPdfWorker();
-    }, []);
+
 
 
     const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+        console.log('PDFViewer: Document load success', numPages);
         setNumPages(numPages);
         setIsLoading(false);
     };
 
     const onDocumentLoadError = (err: Error) => {
-        console.error('PDF Load Error:', err);
+        console.error('PDFViewer: Document load error', err);
         setError(`Failed to load PDF: ${err.message}`);
         setIsLoading(false);
     };
@@ -170,26 +193,20 @@ export default function PDFViewer({ content, onTimeUpdate, onComplete }: PDFView
                 )}
 
                 <div className={`shadow-lg transition-opacity duration-300 ${isLoading ? 'opacity-0' : 'opacity-100'}`}>
-                    <Document
+                    <PDFWrapper
                         file={content.content_url}
                         onLoadSuccess={onDocumentLoadSuccess}
                         onLoadError={onDocumentLoadError}
-                        loading={null}
+                        pageNumber={currentPage}
+                        scale={scale}
                         className="flex flex-col gap-4"
-                    >
-                        <Page
-                            pageNumber={currentPage}
-                            scale={scale}
-                            renderTextLayer={true}
-                            renderAnnotationLayer={true}
-                            className="bg-white"
-                            loading={
-                                <div className="h-[800px] w-[600px] bg-white animate-pulse flex items-center justify-center text-gray-400">
-                                    Loading Page...
-                                </div>
-                            }
-                        />
-                    </Document>
+                        pageClassName="bg-white"
+                        loading={
+                            <div className="h-[800px] w-[600px] bg-white animate-pulse flex items-center justify-center text-gray-400">
+                                Loading Page...
+                            </div>
+                        }
+                    />
                 </div>
             </div>
         </div>

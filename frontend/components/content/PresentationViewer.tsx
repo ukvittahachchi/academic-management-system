@@ -1,10 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Document, Page, pdfjs } from 'react-pdf';
 import { ContentMetadata } from '@/lib/types/content';
+import dynamic from 'next/dynamic';
 
-import { setupPdfWorker } from '@/lib/pdf-setup';
+const PDFWrapper = dynamic(() => import('./PDFWrapper'), {
+    ssr: false,
+    loading: () => <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-blue-600"></div></div>
+});
 
 // Move worker configuration to useEffect to prevent SSR/Import issues
 // pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs`;
@@ -28,10 +31,7 @@ export default function PresentationViewer({ content, onTimeUpdate, onComplete }
     const containerRef = useRef<HTMLDivElement>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Initialize worker
-    useEffect(() => {
-        setupPdfWorker();
-    }, []);
+
 
     // Track time spent and init worker
     useEffect(() => {
@@ -253,28 +253,85 @@ export default function PresentationViewer({ content, onTimeUpdate, onComplete }
                         </div>
                     )}
 
-                    {!isLoading && !error && (
+                    {!error && (
                         <>
-                            {(content.content_type === 'application/pdf' || content.content_url.toLowerCase().endsWith('.pdf')) ? (
+                            {(content.content_type === 'application/pdf' || content.content_url?.toLowerCase()?.endsWith('.pdf')) ? (
                                 <div className="max-w-4xl w-full">
-                                    <Document
-                                        file={content.content_url}
-                                        onLoadSuccess={onDocumentLoadSuccess}
-                                        onLoadError={onDocumentLoadError}
-                                        loading={
-                                            <div className="flex items-center justify-center h-64">
-                                                <div className="animate-spin rounded-full h-8 w-8 border-blue-600"></div>
-                                            </div>
-                                        }
-                                    >
-                                        <Page
+                                    <div className="max-w-4xl w-full">
+                                        <PDFWrapper
+                                            file={content.content_url}
+                                            onLoadSuccess={onDocumentLoadSuccess}
+                                            onLoadError={onDocumentLoadError}
                                             pageNumber={currentPage}
                                             scale={scale}
-                                            renderTextLayer={true}
-                                            renderAnnotationLayer={true}
                                             className="shadow-2xl"
+                                            pageClassName="shadow-2xl"
+                                            loading={
+                                                <div className="flex items-center justify-center h-64">
+                                                    <div className="animate-spin rounded-full h-8 w-8 border-blue-600"></div>
+                                                </div>
+                                            }
                                         />
-                                    </Document>
+                                    </div>
+                                </div>
+                            ) : (content.content_type === 'application/vnd.ms-powerpoint' ||
+                                content.content_type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+                                content.content_url?.toLowerCase()?.endsWith('.ppt') ||
+                                content.content_url?.toLowerCase()?.endsWith('.pptx')) ? (
+                                <div className="w-full h-full flex flex-col items-center">
+                                    {/* Localhost Warning */}
+                                    {typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && (
+                                        <div className="bg-yellow-900/50 border border-yellow-600 text-yellow-200 px-4 py-2 rounded-lg mb-4 text-sm max-w-2xl flex items-center justify-between">
+                                            <span>
+                                                ⚠️ <strong>Development Note:</strong> The standard Office Viewer requires a public URL. This preview may not load on localhost unless you are using a tunnel (e.g., ngrok).
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    <div className="w-full h-full bg-white rounded-lg shadow-lg overflow-hidden relative">
+                                        {/* Loading Fallback */}
+                                        {isLoading && (
+                                            <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-10">
+                                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                                            </div>
+                                        )}
+
+                                        <iframe
+                                            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(content.content_url || '')}`}
+                                            width="100%"
+                                            height="100%"
+                                            frameBorder="0"
+                                            onLoad={() => {
+                                                setIsLoading(false);
+                                                setNumPages(1); // PowerPoint viewer doesn't report pages easily back to us
+                                            }}
+                                            onError={() => {
+                                                console.error("Failed to load iframe");
+                                                setIsLoading(false);
+                                                setError("Failed to load presentation viewer.");
+                                            }}
+                                            className="w-full h-full"
+                                        />
+                                    </div>
+
+                                    <div className="mt-4 flex space-x-4">
+                                        <button
+                                            onClick={handleDownload}
+                                            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded text-sm flex items-center space-x-2"
+                                        >
+                                            <span>📥</span>
+                                            <span>Download File</span>
+                                        </button>
+                                        <a
+                                            href={content.content_url}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm flex items-center space-x-2"
+                                        >
+                                            <span>↗️</span>
+                                            <span>Open Direct Link</span>
+                                        </a>
+                                    </div>
                                 </div>
                             ) : (
                                 <div className="text-center bg-gray-800 p-8 rounded-lg max-w-md">
