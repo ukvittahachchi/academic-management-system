@@ -8,6 +8,7 @@ const dotenv = require('dotenv'); // Fixed: changed from 'path' to 'dotenv'
 const path = require('path');
 const moduleRoutes = require('./routes/module.routes');
 const navigationRoutes = require('./routes/navigation.routes');
+const contentRoutes = require('./routes/content.routes');
 
 // Load environment variables
 require('dotenv').config();
@@ -220,6 +221,10 @@ app.use('/api/test', testRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/modules', moduleRoutes);
 app.use('/api/navigation', navigationRoutes);
+app.use('/api/content', contentRoutes);
+
+
+
 
 // ======================
 // 404 NOT FOUND HANDLER

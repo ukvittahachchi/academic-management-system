@@ -39,13 +39,13 @@ export default function ModuleNavigationPage() {
       setModuleHierarchy(response.data);
 
       // Auto-expand units with in-progress content
-      const inProgressUnitIds = response.data.units
+      const inProgressUnitIds = (response.data.units || [])
         .filter(unit => unit.has_in_progress)
         .map(unit => unit.unit_id);
 
       if (inProgressUnitIds.length > 0) {
         setExpandedUnits(inProgressUnitIds);
-      } else if (response.data.units.length > 0) {
+      } else if (response.data.units?.length > 0) {
         // Expand first unit by default
         setExpandedUnits([response.data.units[0].unit_id]);
       }
@@ -117,11 +117,11 @@ export default function ModuleNavigationPage() {
 
   const handleResume = () => {
     if (moduleHierarchy?.resume_point) {
-      router.push(`/student/learn/${moduleHierarchy.resume_point.part_id}`);
+      router.push(`/student/modules/learn/${moduleHierarchy.resume_point.part_id}`);
     } else if (moduleHierarchy && moduleHierarchy.units && moduleHierarchy.units.length > 0) {
       const firstUnit = moduleHierarchy.units[0];
       if (firstUnit.next_part_id) {
-        router.push(`/student/learn/${firstUnit.next_part_id}`);
+        router.push(`/student/modules/learn/${firstUnit.next_part_id}`);
       }
     }
   };
@@ -210,16 +210,28 @@ export default function ModuleNavigationPage() {
                   </div>
                 </div>
 
-                {/* Resume Button */}
-                {resume_point && (
+                {/* Header Actions */}
+                <div className="flex flex-wrap items-center justify-end gap-3">
+                  {/* Downloads Button */}
                   <button
-                    onClick={handleResume}
-                    className="px-6 py-3 bg-white text-blue-700 font-bold rounded-lg hover:bg-blue-50 transition flex items-center"
+                    onClick={() => router.push('/student/downloads')}
+                    className="px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center space-x-2 shadow-sm font-medium transition-colors"
                   >
-                    <span className="mr-2">▶️</span>
-                    Resume Learning
+                    <span>📥</span>
+                    <span>My Downloads</span>
                   </button>
-                )}
+
+                  {/* Resume Button */}
+                  {resume_point && (
+                    <button
+                      onClick={handleResume}
+                      className="px-6 py-3 bg-white text-blue-700 font-bold rounded-lg hover:bg-blue-50 transition flex items-center shadow-sm"
+                    >
+                      <span className="mr-2">▶️</span>
+                      Resume Learning
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -315,7 +327,7 @@ export default function ModuleNavigationPage() {
                           if (result.type === 'unit') {
                             router.push(`/student/units/${result.id}`);
                           } else {
-                            router.push(`/student/learn/${result.id}`);
+                            router.push(`/student/modules/learn/${result.id}`);
                           }
                         }}
                         className="text-blue-600 hover:text-blue-800 text-sm"
@@ -425,81 +437,91 @@ export default function ModuleNavigationPage() {
                           Lessons in this Unit
                         </h3>
                         <div className="space-y-3">
-                          {Array.from({ length: unit.total_parts }).map((_, index) => {
-                            // In real implementation, fetch actual parts
-                            const partTypes = ['reading', 'presentation', 'video', 'assignment'];
-                            const partType = partTypes[index % 4];
-                            const partNumber = index + 1;
-                            const isCompleted = unit.completed_parts && partNumber <= unit.completed_parts;
-                            const isInProgress = unit.has_in_progress && partNumber === (unit.completed_parts || 0) + 1;
+                          {unit.parts && unit.parts.length > 0 ? (
+                            unit.parts.map((part, index) => {
+                              const partType = part.part_type;
+                              const partNumber = index + 1; // Or use part.display_order if preferred
+                              const isCompleted = part.student_status === 'completed';
+                              const isInProgress = part.student_status === 'in_progress';
 
-                            return (
-                              <div
-                                key={index}
-                                className={`flex items-center p-4 rounded-lg border ${isInProgress
-                                  ? 'border-blue-300 bg-blue-50'
-                                  : isCompleted
-                                    ? 'border-green-200 bg-green-50'
-                                    : 'border-gray-200 hover:bg-gray-50'
-                                  }`}
-                              >
-                                <div className={`p-3 rounded-lg mr-4 ${getPartColor(partType)}`}>
-                                  <span className="text-xl">{getPartIcon(partType)}</span>
-                                </div>
+                              // Logic to determine if part is accessible
+                              // First part always accessible. Subsequent parts accessible if previous is completed or loop logic allows.
+                              // This simple logic assumes linear progression.
+                              const isAccessible = index === 0 ||
+                                (unit.parts && unit.parts[index - 1].student_status === 'completed') ||
+                                isCompleted || isInProgress;
 
-                                <div className="flex-1">
-                                  <div className="flex items-center">
-                                    <h4 className="font-medium text-gray-800">
-                                      Lesson {partNumber}: {partType.charAt(0).toUpperCase() + partType.slice(1)} Title
-                                    </h4>
-                                    {isCompleted && (
-                                      <span className="ml-2 text-green-600">✓</span>
+                              return (
+                                <div
+                                  key={part.part_id}
+                                  className={`flex items-center p-4 rounded-lg border ${isInProgress
+                                    ? 'border-blue-300 bg-blue-50'
+                                    : isCompleted
+                                      ? 'border-green-200 bg-green-50'
+                                      : 'border-gray-200 hover:bg-gray-50'
+                                    }`}
+                                >
+                                  <div className={`p-3 rounded-lg mr-4 ${getPartColor(partType)}`}>
+                                    <span className="text-xl">{getPartIcon(partType)}</span>
+                                  </div>
+
+                                  <div className="flex-1">
+                                    <div className="flex items-center">
+                                      <h4 className="font-medium text-gray-800">
+                                        Lesson {part.display_order}: {part.title}
+                                      </h4>
+                                      {isCompleted && (
+                                        <span className="ml-2 text-green-600">✓</span>
+                                      )}
+                                    </div>
+                                    <div className="text-sm text-gray-500 mt-1">
+                                      {partType === 'reading' && `Reading material (${part.duration_minutes} min)`}
+                                      {partType === 'presentation' && `Interactive presentation (${part.duration_minutes} min)`}
+                                      {partType === 'video' && `Educational video (${part.duration_minutes} min)`}
+                                      {partType === 'assignment' && `Assignment (${part.duration_minutes} min)`}
+                                    </div>
+                                  </div>
+
+                                  <div className="ml-4">
+                                    {isInProgress ? (
+                                      <button
+                                        onClick={() => router.push(`/student/modules/learn/${part.part_id}`)}
+                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm"
+                                      >
+                                        Continue
+                                      </button>
+                                    ) : isCompleted ? (
+                                      <button
+                                        onClick={() => router.push(`/student/modules/learn/${part.part_id}`)}
+                                        className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg text-sm"
+                                      >
+                                        Review
+                                      </button>
+                                    ) : (
+                                      <button
+                                        onClick={() => {
+                                          if (isAccessible) {
+                                            router.push(`/student/modules/learn/${part.part_id}`);
+                                          }
+                                        }}
+                                        className={`px-4 py-2 font-medium rounded-lg text-sm ${isAccessible
+                                          ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                                          : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                                          }`}
+                                        disabled={!isAccessible}
+                                      >
+                                        Start
+                                      </button>
                                     )}
                                   </div>
-                                  <div className="text-sm text-gray-500 mt-1">
-                                    {partType === 'reading' && 'Reading material (10 min)'}
-                                    {partType === 'presentation' && 'Interactive presentation (15 min)'}
-                                    {partType === 'video' && 'Educational video (8 min)'}
-                                    {partType === 'assignment' && 'MCQ assignment (20 min)'}
-                                  </div>
                                 </div>
-
-                                <div className="ml-4">
-                                  {isInProgress ? (
-                                    <button
-                                      onClick={() => router.push(`/student/learn/${unit.next_part_id}`)}
-                                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm"
-                                    >
-                                      Continue
-                                    </button>
-                                  ) : isCompleted ? (
-                                    <button
-                                      onClick={() => router.push(`/student/learn/${unit.unit_id * 10 + partNumber}`)}
-                                      className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg text-sm"
-                                    >
-                                      Review
-                                    </button>
-                                  ) : (
-                                    <button
-                                      onClick={() => {
-                                        // Check if previous part is completed
-                                        if (partNumber === 1 || (unit.completed_parts && partNumber <= unit.completed_parts + 1)) {
-                                          router.push(`/student/learn/${unit.unit_id * 10 + partNumber}`);
-                                        }
-                                      }}
-                                      className={`px-4 py-2 font-medium rounded-lg text-sm ${partNumber === 1 || (unit.completed_parts && partNumber <= unit.completed_parts + 1)
-                                        ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                                        : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                                        }`}
-                                      disabled={!(partNumber === 1 || (unit.completed_parts && partNumber <= unit.completed_parts + 1))}
-                                    >
-                                      Start
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })
+                          ) : (
+                            <div className="text-center py-4 text-gray-500">
+                              No lessons content available in this unit.
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

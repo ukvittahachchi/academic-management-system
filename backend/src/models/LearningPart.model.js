@@ -48,7 +48,7 @@ class LearningPart {
 
     const params = [
       unit_id, part_type, title, content_url || null, content_data || null,
-      order, duration_minutes || 10, 
+      order, duration_minutes || 10,
       requires_completion !== undefined ? requires_completion : true,
       unlock_next !== undefined ? unlock_next : true
     ];
@@ -58,15 +58,15 @@ class LearningPart {
       return this.findById(result.insertId);
     } catch (error) {
       console.error('Create Learning Part Error:', error);
-      
+
       if (error.code === 'ER_DUP_ENTRY') {
         throw new AppError('Learning part with this title already exists in this unit', 409);
       }
-      
+
       if (error.code === 'ER_NO_REFERENCED_ROW_2') {
         throw new AppError('Referenced unit does not exist', 404);
       }
-      
+
       throw new AppError('Failed to create learning part', 500);
     }
   }
@@ -86,7 +86,7 @@ class LearningPart {
           m.module_name,
           m.grade_level
       `;
-      
+
       // Add student progress if studentId provided
       if (studentId) {
         sql += `,
@@ -100,13 +100,13 @@ class LearningPart {
           sp.data_json
         `;
       }
-      
+
       sql += `
         FROM learning_parts lp
         JOIN units u ON lp.unit_id = u.unit_id
         JOIN modules m ON u.module_id = m.module_id
       `;
-      
+
       if (studentId) {
         sql += `
           LEFT JOIN student_progress sp ON lp.part_id = sp.part_id AND sp.student_id = ?
@@ -115,16 +115,16 @@ class LearningPart {
       } else {
         sql += ` WHERE lp.part_id = ?`;
       }
-      
+
       const params = studentId ? [studentId, partId] : [partId];
       const [parts] = await database.query(sql, params);
-      
+
       if (parts.length === 0) {
         throw new NotFoundError('Learning part');
       }
-      
+
       const part = parts[0];
-      
+
       // Get next part in sequence
       const [nextParts] = await database.query(`
         SELECT part_id, title, part_type
@@ -133,9 +133,9 @@ class LearningPart {
         ORDER BY display_order
         LIMIT 1
       `, [part.unit_id, part.display_order]);
-      
+
       part.next_part = nextParts[0] || null;
-      
+
       // Get previous part
       const [prevParts] = await database.query(`
         SELECT part_id, title, part_type
@@ -144,9 +144,9 @@ class LearningPart {
         ORDER BY display_order DESC
         LIMIT 1
       `, [part.unit_id, part.display_order]);
-      
+
       part.previous_part = prevParts[0] || null;
-      
+
       return part;
     } catch (error) {
       if (error instanceof NotFoundError) {
@@ -168,7 +168,7 @@ class LearningPart {
           m.module_id,
           m.module_name
       `;
-      
+
       // Add student progress if studentId provided
       if (studentId) {
         sql += `,
@@ -180,13 +180,13 @@ class LearningPart {
           sp.attempts
         `;
       }
-      
+
       sql += `
         FROM learning_parts lp
         JOIN units u ON lp.unit_id = u.unit_id
         JOIN modules m ON u.module_id = m.module_id
       `;
-      
+
       if (studentId) {
         sql += `
           LEFT JOIN student_progress sp ON lp.part_id = sp.part_id AND sp.student_id = ?
@@ -195,16 +195,69 @@ class LearningPart {
       } else {
         sql += ` WHERE lp.unit_id = ? AND lp.is_active = TRUE`;
       }
-      
+
       sql += ` ORDER BY lp.display_order`;
-      
+
       const params = studentId ? [studentId, unitId] : [unitId];
-      const [parts] = await database.query(sql, params);
-      
+      const parts = await database.query(sql, params);
+
       return parts;
     } catch (error) {
       console.error('Find Learning Parts By Unit Error:', error);
       throw new AppError('Failed to fetch learning parts', 500);
+    }
+  }
+
+  // ======================
+  // GET ALL PARTS FOR MODULE
+  // ======================
+  static async findByModule(moduleId, studentId = null) {
+    try {
+      let sql = `
+        SELECT 
+          lp.*,
+          u.unit_id,
+          u.unit_order,
+          m.module_id,
+          m.module_name
+      `;
+
+      // Add student progress if studentId provided
+      if (studentId) {
+        sql += `,
+          sp.status as student_status,
+          sp.started_at,
+          sp.completed_at,
+          sp.score,
+          sp.total_marks,
+          sp.attempts
+        `;
+      }
+
+      sql += `
+        FROM learning_parts lp
+        JOIN units u ON lp.unit_id = u.unit_id
+        JOIN modules m ON u.module_id = m.module_id
+      `;
+
+      if (studentId) {
+        sql += `
+          LEFT JOIN student_progress sp ON lp.part_id = sp.part_id AND sp.student_id = ?
+          WHERE m.module_id = ? AND lp.is_active = TRUE
+        `;
+      } else {
+        sql += ` WHERE m.module_id = ? AND lp.is_active = TRUE`;
+      }
+
+      sql += ` ORDER BY u.unit_order, lp.display_order`;
+
+      const params = studentId ? [studentId, moduleId] : [moduleId];
+      const parts = await database.query(sql, params);
+
+      return parts;
+    } catch (error) {
+      console.error('Find Learning Parts By Module Error:', error);
+      throw new AppError('Failed to fetch module learning parts', 500);
     }
   }
 
@@ -226,7 +279,7 @@ class LearningPart {
         JOIN modules m ON u.module_id = m.module_id
         WHERE sp.part_id = ? AND sp.student_id = ?
       `;
-      
+
       const [progress] = await database.query(sql, [partId, studentId]);
       return progress[0] || null;
     } catch (error) {
@@ -245,15 +298,15 @@ class LearningPart {
       if (!part) {
         throw new NotFoundError('Learning part');
       }
-      
+
       const allowedFields = [
         'title', 'content_url', 'content_data', 'display_order',
         'duration_minutes', 'is_active', 'requires_completion', 'unlock_next'
       ];
-      
+
       const updates = [];
       const params = [];
-      
+
       // Build dynamic update query
       for (const field of allowedFields) {
         if (updateData[field] !== undefined) {
@@ -261,21 +314,21 @@ class LearningPart {
           params.push(updateData[field]);
         }
       }
-      
+
       if (updates.length === 0) {
         return part; // Nothing to update
       }
-      
+
       params.push(partId);
-      
+
       const sql = `
         UPDATE learning_parts 
         SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP
         WHERE part_id = ?
       `;
-      
+
       await database.query(sql, params);
-      
+
       // Return updated part
       return this.findById(partId);
     } catch (error) {
@@ -283,11 +336,11 @@ class LearningPart {
         throw error;
       }
       console.error('Update Learning Part Error:', error);
-      
+
       if (error.code === 'ER_DUP_ENTRY') {
         throw new AppError('Learning part with this title already exists in this unit', 409);
       }
-      
+
       throw new AppError('Failed to update learning part', 500);
     }
   }
@@ -302,20 +355,20 @@ class LearningPart {
       if (!part) {
         throw new NotFoundError('Learning part');
       }
-      
+
       // Check if there are student progress records
       const [progress] = await database.query(
         'SELECT COUNT(*) as progress_count FROM student_progress WHERE part_id = ?',
         [partId]
       );
-      
+
       if (progress[0].progress_count > 0) {
         throw new AppError('Cannot delete learning part that has student progress records', 400);
       }
-      
+
       const sql = 'DELETE FROM learning_parts WHERE part_id = ?';
       await database.query(sql, [partId]);
-      
+
       return { success: true, message: 'Learning part deleted successfully' };
     } catch (error) {
       if (error instanceof NotFoundError || error instanceof AppError) {
@@ -338,12 +391,12 @@ class LearningPart {
         total_marks = null,
         data_json = null
       } = progressData;
-      
+
       // Check if progress record exists
       const existingProgress = await this.getStudentProgress(partId, studentId);
-      
+
       let sql, params;
-      
+
       if (existingProgress) {
         // Update existing progress
         sql = `
@@ -361,7 +414,7 @@ class LearningPart {
             updated_at = CURRENT_TIMESTAMP
           WHERE student_id = ? AND part_id = ?
         `;
-        
+
         params = [
           status, time_spent_seconds, score, total_marks, data_json,
           status, studentId, partId
@@ -379,16 +432,16 @@ class LearningPart {
             CASE WHEN ? = 'completed' THEN 1 ELSE 0 END
           )
         `;
-        
+
         params = [
           studentId, partId, status, status,
           time_spent_seconds, score, total_marks, data_json,
           status
         ];
       }
-      
+
       await database.query(sql, params);
-      
+
       // Return updated progress
       return this.getStudentProgress(partId, studentId);
     } catch (error) {
@@ -423,7 +476,7 @@ class LearningPart {
         ORDER BY u.unit_order, lp.display_order
         LIMIT 1
       `;
-      
+
       const [nextParts] = await database.query(sql, [studentId, moduleId]);
       return nextParts[0] || null;
     } catch (error) {
@@ -437,17 +490,17 @@ class LearningPart {
   // ======================
   static validateLearningPartData(data, isUpdate = false) {
     const errors = [];
-    
+
     if (!isUpdate || data.title !== undefined) {
       if (!data.title || data.title.trim().length < 3) {
         errors.push('Title must be at least 3 characters');
       }
-      
+
       if (data.title && data.title.length > 200) {
         errors.push('Title must not exceed 200 characters');
       }
     }
-    
+
     if (!isUpdate || data.part_type !== undefined) {
       if (!data.part_type) {
         errors.push('Part type is required');
@@ -455,21 +508,21 @@ class LearningPart {
         errors.push('Part type must be one of: reading, presentation, video, assignment');
       }
     }
-    
+
     if (!isUpdate || data.unit_id !== undefined) {
       if (!data.unit_id) {
         errors.push('Unit ID is required');
       }
     }
-    
+
     if (data.duration_minutes && (data.duration_minutes < 1 || data.duration_minutes > 480)) {
       errors.push('Duration must be between 1 and 480 minutes');
     }
-    
+
     if (data.content_url && data.content_url.length > 500) {
       errors.push('Content URL must not exceed 500 characters');
     }
-    
+
     return errors;
   }
 }

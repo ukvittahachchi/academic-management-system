@@ -16,6 +16,7 @@ export interface Unit {
   progress_percentage?: number;
   has_in_progress?: boolean;
   next_part_id?: number;
+  parts?: LearningPart[];
   created_at: string;
   updated_at: string;
 }
@@ -34,7 +35,7 @@ export interface LearningPart {
   unlock_next: boolean;
   module_id: number;
   module_name: string;
-  
+
   // Student progress
   student_status?: 'not_started' | 'in_progress' | 'completed';
   started_at?: string;
@@ -43,7 +44,7 @@ export interface LearningPart {
   score?: number;
   total_marks?: number;
   attempts?: number;
-  
+
   // Navigation
   next_part?: {
     part_id: number;
@@ -55,7 +56,7 @@ export interface LearningPart {
     title: string;
     part_type: string;
   };
-  
+
   created_at: string;
   updated_at: string;
 }

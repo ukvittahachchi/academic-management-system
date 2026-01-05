@@ -27,13 +27,13 @@ class Database {
 
       console.log('🔌 Connecting to MySQL...');
       this.pool = mysql.createPool(this.config);
-      
+
       // Test connection
       const connection = await this.pool.getConnection();
       console.log('✅ MySQL Connected Successfully!');
       console.log(`   Database: ${this.config.database}`);
       console.log(`   Host: ${this.config.host}:${this.config.port}`);
-      
+
       connection.release();
       this.isConnected = true;
       return this.pool;
@@ -70,6 +70,11 @@ class Database {
       throw error;
     }
   }
+
+  async execute(sql, params = []) {
+    return this.query(sql, params);
+  }
+
 
   async close() {
     if (this.pool) {
