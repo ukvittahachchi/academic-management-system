@@ -1,0 +1,80 @@
+--- Checking Logins ---
+
+Testing: test_student
+???? Connecting to MySQL...
+??? MySQL Connected Successfully!
+   Database: academic_system
+   Host: localhost:3306
+???? Executing SQL: 
+        SELECT 
+          user_id, school_id, username, full_name, role,
+          class_grade, rol...
+??? User found (Role: student)
+??? Login SUCCESS with 'password123' (Direct bcrypt)
+???? Executing SQL: 
+        SELECT account_locked_until 
+        FROM users 
+        WHERE username = ? 
+          AND ...
+???? Executing SQL: 
+        SELECT 
+          user_id, school_id, username, full_name, role,
+          class_grade, rol...
+???? Executing SQL: 
+          UPDATE users 
+          SET login_attempts = 0, 
+              account_locked_until = NUL...
+???? Executing SQL: 
+        INSERT INTO auth_activity_logs 
+        (user_id, activity_type, ip_address, user_agent, de...
+??? AuthService.login SUCCESS for test_student
+
+Testing: test_teacher
+???? Executing SQL: 
+        SELECT 
+          user_id, school_id, username, full_name, role,
+          class_grade, rol...
+??? User found (Role: teacher)
+??? Login SUCCESS with 'password123' (Direct bcrypt)
+???? Executing SQL: 
+        SELECT account_locked_until 
+        FROM users 
+        WHERE username = ? 
+          AND ...
+???? Executing SQL: 
+        SELECT 
+          user_id, school_id, username, full_name, role,
+          class_grade, rol...
+???? Executing SQL: 
+          UPDATE users 
+          SET login_attempts = 0, 
+              account_locked_until = NUL...
+???? Executing SQL: 
+        INSERT INTO auth_activity_logs 
+        (user_id, activity_type, ip_address, user_agent, de...
+??? AuthService.login SUCCESS for test_teacher
+
+Testing: test_admin
+???? Executing SQL: 
+        SELECT 
+          user_id, school_id, username, full_name, role,
+          class_grade, rol...
+??? User found (Role: admin)
+??? Login SUCCESS with 'password123' (Direct bcrypt)
+???? Executing SQL: 
+        SELECT account_locked_until 
+        FROM users 
+        WHERE username = ? 
+          AND ...
+???? Executing SQL: 
+        SELECT 
+          user_id, school_id, username, full_name, role,
+          class_grade, rol...
+???? Executing SQL: 
+          UPDATE users 
+          SET login_attempts = 0, 
+              account_locked_until = NUL...
+???? Executing SQL: 
+        INSERT INTO auth_activity_logs 
+        (user_id, activity_type, ip_address, user_agent, de...
+??? AuthService.login SUCCESS for test_admin

@@ -25,6 +25,15 @@ import {
   DownloadUrlResponse
 } from './types/content';
 
+// New imports for Assignment functionality
+import {
+  AssignmentDetailsResponse,
+  StartAttemptResponse,
+  SubmissionResponse,
+  Submission,
+  StudentAssignment
+} from './types/assignment';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 class ApiClient {
@@ -66,7 +75,7 @@ class ApiClient {
         throw new Error(data.message || `HTTP ${response.status}`);
       }
 
-      return data; // Some endpoints might wrap data in a 'data' property, adjusted per method below
+      return data;
     } catch (error) {
       console.error('API Request Failed:', error);
       throw error;
@@ -452,6 +461,94 @@ class ApiClient {
       body: JSON.stringify({ timeSpent }),
     });
   }
+
+  // ======================
+  // ASSIGNMENT SYSTEM
+  // ======================
+
+  /**
+   * Get details for an assignment (time limit, instructions, etc.)
+   */
+  async getAssignmentDetails(partId: number): Promise<AssignmentDetailsResponse> {
+    // Note: 'data' wrapper is handled in type or here.
+    // Assuming API returns { success: true, data: { ... } }
+    const response = await this.request<{ data: AssignmentDetailsResponse }>(`/assignments/${partId}/details`);
+    return response.data;
+  }
+
+  /**
+   * Start a new assignment attempt
+   */
+  async startAssignmentAttempt(partId: number): Promise<StartAttemptResponse> {
+    const response = await this.request<{ data: StartAttemptResponse }>(`/assignments/${partId}/start`, {
+      method: 'POST',
+    });
+    return response.data;
+  }
+
+  /**
+   * Save progress (manual save triggered by user or navigation)
+   */
+  async saveAssignmentProgress(
+    attemptId: number,
+    answers: any,
+    timeRemaining: number,
+    currentQuestion: number
+  ): Promise<void> {
+    await this.request(`/assignments/attempt/${attemptId}/progress`, {
+      method: 'POST',
+      body: JSON.stringify({ answers, timeRemaining, currentQuestion })
+    });
+  }
+
+  /**
+   * Auto-save progress (background sync)
+   * Returns timed_out status if the server calculates time is up
+   */
+  async autoSaveAssignmentProgress(attemptId: number, timeRemaining: number): Promise<{ timed_out?: boolean }> {
+    return this.request<{ timed_out?: boolean }>(`/assignments/attempt/${attemptId}/auto-save`, {
+      method: 'POST',
+      body: JSON.stringify({ timeRemaining })
+    });
+  }
+
+  /**
+   * Submit the assignment for grading
+   */
+  async submitAssignment(attemptId: number, answers: any): Promise<SubmissionResponse> {
+    const response = await this.request<{ data: SubmissionResponse }>(`/assignments/attempt/${attemptId}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ answers })
+    });
+    return response.data;
+  }
+
+  /**
+   * Get a review of a completed submission
+   */
+  async getSubmissionReview(submissionId: number): Promise<{ submission: Submission, questions: any[] }> {
+    const response = await this.request<{ data: { submission: Submission, questions: any[] } }>(
+      `/assignments/submission/${submissionId}/review`
+    );
+    return response.data;
+  }
+
+  /**
+   * Get history of attempts for a specific assignment
+   */
+  async getAssignmentHistory(assignmentId: number): Promise<Submission[]> {
+    const response = await this.request<{ data: Submission[] }>(`/assignments/${assignmentId}/history`);
+    return response.data;
+  }
+
+  /**
+   * Get all assignments assigned to the current student
+   */
+  async getStudentAssignments(): Promise<StudentAssignment[]> {
+    const response = await this.request<{ data: StudentAssignment[] }>(`/assignments/student/all`);
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();
+export const assignmentAPI = apiClient;

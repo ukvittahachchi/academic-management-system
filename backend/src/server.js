@@ -9,6 +9,7 @@ const path = require('path');
 const moduleRoutes = require('./routes/module.routes');
 const navigationRoutes = require('./routes/navigation.routes');
 const contentRoutes = require('./routes/content.routes');
+const assignmentRoutes = require('./routes/assignment.routes');
 
 // Load environment variables
 require('dotenv').config();
@@ -222,7 +223,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/modules', moduleRoutes);
 app.use('/api/navigation', navigationRoutes);
 app.use('/api/content', contentRoutes);
-
+app.use('/api/assignments', assignmentRoutes);
 
 
 

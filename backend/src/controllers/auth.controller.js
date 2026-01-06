@@ -19,7 +19,7 @@ class AuthController {
   // ======================
   login = asyncHandler(async (req, res) => {
     const { username, password } = req.body;
-    
+
     const ipAddress = req.ip || req.connection.remoteAddress;
     const userAgent = req.get('user-agent');
 
@@ -82,7 +82,7 @@ class AuthController {
   // ======================
   getCurrentUser = asyncHandler(async (req, res) => {
     const userId = req.user?.userId;
-    
+
     if (!userId) {
       return res.status(401).json({
         success: false,
@@ -141,11 +141,11 @@ class AuthController {
       });
     } else {
       const refreshToken = req.cookies?.refreshToken;
-      
+
       if (refreshToken) {
         return this.refreshToken(req, res);
       }
-      
+
       res.status(200).json({
         success: true,
         authenticated: false,

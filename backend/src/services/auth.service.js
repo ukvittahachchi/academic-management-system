@@ -28,13 +28,13 @@ class AuthService {
       if (isLocked) {
         const remainingTime = await User.getLockTimeRemaining(username);
         const minutes = Math.ceil(remainingTime / 60);
-        
+
         await User.logAuthActivity(null, 'account_locked', ipAddress, userAgent, {
           username,
           reason: 'Too many failed attempts',
           lockTimeRemaining: remainingTime
         });
-        
+
         throw new AuthenticationError(
           `Account is temporarily locked due to too many failed login attempts. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`
         );
@@ -48,7 +48,7 @@ class AuthService {
           username,
           reason: 'User not found'
         });
-        
+
         // Don't reveal that user doesn't exist for security
         throw new AuthenticationError('Invalid username or password');
       }
@@ -58,27 +58,29 @@ class AuthService {
         await User.logAuthActivity(user.user_id, 'login_failed', ipAddress, userAgent, {
           reason: 'Account is inactive'
         });
-        
+
         throw new AuthenticationError('Your account is inactive. Please contact your school administrator.');
       }
 
       // 5. Verify password
       const isPasswordValid = await User.verifyPassword(password, user.password_hash);
+
+
       if (!isPasswordValid) {
         await User.updateLoginAttempts(username, false);
-        
+
         // Check remaining attempts
         const remainingAttempts = 5 - (user.login_attempts + 1);
         await User.logAuthActivity(user.user_id, 'login_failed', ipAddress, userAgent, {
           reason: 'Invalid password',
           remainingAttempts
         });
-        
+
         let errorMessage = 'Invalid username or password';
         if (remainingAttempts <= 3 && remainingAttempts > 0) {
           errorMessage += `. ${remainingAttempts} attempt${remainingAttempts > 1 ? 's' : ''} remaining.`;
         }
-        
+
         throw new AuthenticationError(errorMessage);
       }
 
@@ -106,12 +108,12 @@ class AuthService {
 
     } catch (error) {
       console.error('Login Service Error:', error);
-      
+
       // Re-throw AppError instances, wrap others
       if (error instanceof AppError) {
         throw error;
       }
-      
+
       // Don't expose internal errors to users
       throw new AppError('Login failed. Please check your credentials and try again.', 500);
     }
@@ -125,7 +127,7 @@ class AuthService {
       if (userId) {
         await User.logAuthActivity(userId, 'logout', ipAddress, userAgent);
       }
-      
+
       return {
         success: true,
         message: 'Logout successful'
@@ -172,7 +174,7 @@ class AuthService {
 
     } catch (error) {
       console.error('Refresh Token Service Error:', error);
-      
+
       if (error instanceof AppError) {
         throw error;
       }
@@ -207,7 +209,7 @@ class AuthService {
 
     } catch (error) {
       console.error('Get Current User Error:', error);
-      
+
       if (error instanceof AppError) {
         throw error;
       }
@@ -233,7 +235,7 @@ class AuthService {
       const sql = `SELECT password_hash FROM users WHERE user_id = ?`;
       const database = require('../config/mysql');
       const [users] = await database.query(sql, [userId]);
-      
+
       if (users.length === 0) {
         throw new AuthenticationError('User not found');
       }
@@ -257,7 +259,7 @@ class AuthService {
 
     } catch (error) {
       console.error('Change Password Error:', error);
-      
+
       if (error instanceof AppError) {
         throw error;
       }
@@ -271,7 +273,7 @@ class AuthService {
   async validateToken(token) {
     try {
       const { valid, decoded, error } = jwtService.verifyAccessToken(token);
-      
+
       if (!valid) {
         return {
           valid: false,
