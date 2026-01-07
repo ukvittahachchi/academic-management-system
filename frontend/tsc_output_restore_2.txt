@@ -1,0 +1,1 @@
+app/student/modules/ClientStudentModules.tsx(113,70): error TS18048: 'module.progress_percentage' is possibly 'undefined'.

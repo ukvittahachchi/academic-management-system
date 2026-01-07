@@ -1,0 +1,4 @@
+app/student/assignments/ClientAssignments.tsx(13,81): error TS2724: '"react-icons/lu"' has no exported member named 'LuAlertCircle'. Did you mean 'LuLoaderCircle'?
+app/student/downloads/ClientDownloads.tsx(204,148): error TS2322: Type '{ children: Element[]; key: number; className: string; padding: string; }' is not assignable to type 'IntrinsicAttributes & StudentCardProps'.
+  Property 'padding' does not exist on type 'IntrinsicAttributes & StudentCardProps'.
+app/student/profile/ClientProfile.tsx(205,42): error TS2304: Cannot find name 'LuAlertCircle'.

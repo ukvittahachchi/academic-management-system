@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false }) as any;
 import { ContentMetadata } from '@/lib/types/content';
 import { apiClient } from '@/lib/api-client';
+import StudentButton from '@/components/ui/StudentButton';
 
 interface VideoViewerProps {
     content: ContentMetadata;
@@ -88,67 +89,74 @@ export default function VideoViewer({ content, onTimeUpdate, onComplete }: Video
     };
 
     return (
-        <div className="flex flex-col h-full bg-gray-900 rounded-lg overflow-hidden text-white">
+        <div className="flex flex-col h-full bg-surface-50 rounded-3xl overflow-hidden shadow-soft border border-gray-100">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 bg-gray-800 border-b border-gray-700">
-                <div className="flex items-center space-x-4">
-                    <span className="text-2xl">🎬</span>
+            <div className="flex items-center justify-between p-4 bg-white border-b border-gray-100 z-10">
+                <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 text-blue-500 rounded-xl flex items-center justify-center">
+                        🎬
+                    </div>
                     <div>
-                        <h2 className="text-lg font-semibold truncate max-w-md">{content.title}</h2>
-                        <div className="text-xs text-gray-400">
-                            {duration > 0 ? `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')} total` : 'Loading duration...'}
+                        <h2 className="text-lg font-bold truncate max-w-md text-gray-800">{content.title}</h2>
+                        <div className="text-xs font-bold text-gray-400">
+                            {duration > 0 ? `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')} total` : 'Loading...'}
                         </div>
                     </div>
                 </div>
 
-                <div className="flex items-center space-x-4">
+                <div className="flex items-center gap-2">
                     {/* Playback Speed */}
-                    <select
-                        value={playbackRate}
-                        onChange={(e) => setPlaybackRate(parseFloat(e.target.value))}
-                        className="bg-gray-700 text-sm rounded px-2 py-1 border border-gray-600 focus:outline-none focus:border-blue-500"
-                    >
-                        <option value="0.5">0.5x</option>
-                        <option value="0.75">0.75x</option>
-                        <option value="1.0">1.0x</option>
-                        <option value="1.25">1.25x</option>
-                        <option value="1.5">1.5x</option>
-                        <option value="2.0">2.0x</option>
-                    </select>
+                    <div className="relative group">
+                        <select
+                            value={playbackRate}
+                            onChange={(e) => setPlaybackRate(parseFloat(e.target.value))}
+                            className="bg-gray-50 font-bold text-gray-600 text-sm rounded-xl px-3 py-2 border-none focus:ring-2 focus:ring-brand-500 cursor-pointer hover:bg-gray-100 transition-all appearance-none pr-8"
+                        >
+                            <option value="0.5">0.5x</option>
+                            <option value="0.75">0.75x</option>
+                            <option value="1.0">1.0x (Normal)</option>
+                            <option value="1.25">1.25x</option>
+                            <option value="1.5">1.5x</option>
+                            <option value="2.0">2.0x</option>
+                        </select>
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                            ▼
+                        </div>
+                    </div>
 
                     {/* Download */}
                     {content.is_downloadable && (
-                        <button
+                        <StudentButton
                             onClick={handleDownload}
-                            className="p-2 bg-gray-700 rounded hover:bg-gray-600 transition"
-                            title="Download Video"
+                            variant="accent"
+                            size="sm"
                         >
-                            📥
-                        </button>
+                            📥 Download
+                        </StudentButton>
                     )}
                 </div>
             </div>
 
-            {/* Video Player */}
-            <div className="flex-1 relative bg-black flex items-center justify-center">
+            {/* Video Player Container */}
+            <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
                 {!isReady && !error && (
-                    <div className="absolute inset-0 flex items-center justify-center z-10">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                    <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50 backdrop-blur-sm">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-brand-500"></div>
                     </div>
                 )}
 
                 {error ? (
-                    <div className="text-center p-8">
-                        <div className="text-red-500 text-5xl mb-4">⚠️</div>
-                        <p className="text-xl font-semibold mb-2">Video Error</p>
+                    <div className="text-center p-8 text-white">
+                        <div className="text-red-500 text-6xl mb-4">⚠️</div>
+                        <p className="text-2xl font-bold mb-2">Video Error</p>
                         <p className="text-gray-400 mb-6">{error}</p>
                         {content.is_downloadable && (
-                            <button
+                            <StudentButton
                                 onClick={handleDownload}
-                                className="px-6 py-2 bg-blue-600 rounded hover:bg-blue-700 transition"
+                                variant="primary"
                             >
                                 Download to Watch Offline
-                            </button>
+                            </StudentButton>
                         )}
                     </div>
                 ) : (
@@ -171,18 +179,17 @@ export default function VideoViewer({ content, onTimeUpdate, onComplete }: Video
                             onDuration={setDuration}
                             progressInterval={1000}
                             config={playerConfig}
+                            style={{ backgroundColor: 'black' }}
                         />
                     </div>
                 )}
             </div>
 
             {/* Footer / Stats */}
-            <div className="bg-gray-800 p-3 text-xs text-gray-400 flex justify-between items-center border-t border-gray-700">
-                <div>
-                    Time spent watching: {Math.floor(timeSpent / 60)}m {timeSpent % 60}s
-                </div>
-                <div>
-                    Video Player v1.0
+            <div className="bg-white p-3 text-xs font-bold text-gray-400 flex justify-between items-center border-t border-gray-100">
+                <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                    Time watched: {Math.floor(timeSpent / 60)}m {timeSpent % 60}s
                 </div>
             </div>
         </div>

@@ -1,0 +1,8 @@
+app/student/dashboard/ClientStudentDashboard.tsx(35,43): error TS2339: Property 'data' does not exist on type 'DashboardData'.
+app/student/modules/ClientStudentModules.tsx(11,74): error TS2724: '"react-icons/lu"' has no exported member named 'LuBarChart'. Did you mean 'LuArmchair'?
+app/student/modules/ClientStudentModules.tsx(39,42): error TS2339: Property 'getStudentModules' does not exist on type 'ApiClient'.
+app/student/modules/ClientStudentModules.tsx(91,182): error TS2339: Property 'level' does not exist on type 'Module'.
+app/student/modules/ClientStudentModules.tsx(113,70): error TS18048: 'module.progress_percentage' is possibly 'undefined'.
+app/student/profile/ClientProfile.tsx(27,46): error TS2551: Property 'getStudentStats' does not exist on type 'ApiClient'. Did you mean 'getStudyTimeStats'?
+app/student/profile/ClientProfile.tsx(68,111): error TS2339: Property 'email' does not exist on type 'User'.
+app/student/profile/ClientProfile.tsx(138,44): error TS2322: Type '"danger"' is not assignable to type '"ghost" | "primary" | "secondary" | "accent" | "outline" | "glass" | "gradient" | undefined'.

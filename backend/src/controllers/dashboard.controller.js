@@ -52,7 +52,13 @@ class DashboardController {
             upcoming_assignments: upcomingAssignments,
             grades_overview: gradesOverview,
             performance_history: performanceHistory,
-            module_progress: moduleProgress,
+            module_progress: moduleProgress.map(p => ({
+                ...p,
+                total_parts: Number(p.total_parts),
+                completed_parts: Number(p.completed_parts),
+                progress_percentage: parseFloat(p.progress_percentage || 0),
+                avg_score: parseFloat(p.avg_score || 0)
+            })),
             study_time_stats: studyTimeStats,
             leaderboard: leaderboardStats,
             notifications: notifications,
@@ -139,9 +145,18 @@ class DashboardController {
 
         const progress = await DashboardModel.getModuleProgress(userId);
 
+        // Ensure numeric values are actually numbers (MySQL driver might return strings for COUNT/DECIMAL)
+        const formattedProgress = progress.map(p => ({
+            ...p,
+            total_parts: Number(p.total_parts),
+            completed_parts: Number(p.completed_parts),
+            progress_percentage: parseFloat(p.progress_percentage || 0),
+            avg_score: parseFloat(p.avg_score || 0)
+        }));
+
         res.json({
             success: true,
-            data: progress
+            data: formattedProgress
         });
     });
 

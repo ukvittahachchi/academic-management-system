@@ -8,6 +8,7 @@ import { apiClient } from '@/lib/api-client';
 import { Module } from '@/lib/types/module';
 import { Unit } from '@/lib/types/navigation';
 import { getErrorMessage, formatDate } from '@/lib/validation';
+import { LuArrowLeft, LuX, LuCheck, LuLaptop, LuActivity, LuTrophy, LuBook, LuClock, LuPlay, LuAward } from "react-icons/lu";
 
 export default function ModuleDetailPage() {
   const params = useParams();
@@ -62,7 +63,7 @@ export default function ModuleDetailPage() {
       <StudentRoute>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
             <p className="mt-4 text-gray-600">Loading module details...</p>
           </div>
         </div>
@@ -75,7 +76,7 @@ export default function ModuleDetailPage() {
       <StudentRoute>
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center max-w-md">
-            <div className="text-red-600 text-5xl mb-6">❌</div>
+            <div className="text-red-500 text-5xl mb-6 flex justify-center"><LuX /></div>
             <h1 className="text-2xl font-bold text-gray-800 mb-3">
               Module Not Found
             </h1>
@@ -85,7 +86,7 @@ export default function ModuleDetailPage() {
             <div className="space-y-3">
               <button
                 onClick={() => router.push('/student/modules')}
-                className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg"
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg"
               >
                 ← Back to Modules
               </button>
@@ -106,38 +107,39 @@ export default function ModuleDetailPage() {
     <StudentRoute>
       <div className="min-h-screen bg-gray-50">
         {/* Header */}
-        <div className="bg-gradient-to-r from-green-600 to-blue-600 text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="flex justify-between items-start">
+        <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg relative overflow-hidden pb-32">
+          <div className="absolute inset-0 bg-white/5 backdrop-blur-[2px]"></div>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-8 relative z-10">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-6">
               <div>
                 <button
                   onClick={() => router.push('/student/modules')}
-                  className="mb-4 text-green-100 hover:text-white flex items-center"
+                  className="mb-6 text-indigo-100 hover:text-white flex items-center transition-colors font-medium"
                 >
-                  <span className="mr-2">←</span> Back to Modules
+                  <LuArrowLeft className="mr-2" /> Back to Modules
                 </button>
-                <h1 className="text-3xl font-bold mb-2">{module.module_name}</h1>
-                <div className="flex items-center space-x-4 text-green-100">
-                  <span className="px-3 py-1 bg-green-700 rounded-full text-sm">
+                <h1 className="text-4xl font-bold mb-4 leading-tight">{module.module_name}</h1>
+                <div className="flex flex-wrap items-center gap-4 text-indigo-100 font-medium">
+                  <span className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-lg text-sm border border-white/10">
                     {module.grade_level}
                   </span>
                   <span>{module.subject}</span>
-                  <span>•</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-300"></span>
                   <span>{module.unit_count} Units</span>
-                  <span>•</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-300"></span>
                   <span>{module.content_count} Lessons</span>
                 </div>
               </div>
-              <div className="text-right">
+              <div className="text-left md:text-right bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/10">
                 <div className="mb-4">
-                  <div className="text-2xl font-bold">
+                  <div className="text-3xl font-bold">
                     {module.progress_percentage || 0}%
                   </div>
-                  <div className="text-sm text-green-100">Complete</div>
+                  <div className="text-sm text-indigo-100 uppercase tracking-widest font-bold">Complete</div>
                 </div>
                 <button
                   onClick={handleStartLearning}
-                  className="px-6 py-3 bg-white text-green-700 font-bold rounded-lg hover:bg-green-50 transition"
+                  className="w-full md:w-auto px-8 py-3 bg-white text-indigo-600 font-bold rounded-xl hover:bg-indigo-50 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
                   {module.progress_percentage === 0 ? 'Start Learning' :
                     module.progress_percentage === 100 ? 'Review Again' : 'Continue Learning'}
@@ -148,17 +150,17 @@ export default function ModuleDetailPage() {
         </div>
 
         {/* Progress Bar */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-4">
-          <div className="bg-white rounded-xl shadow-lg p-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-20 mb-8">
+          <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
             <div className="flex items-center justify-between mb-2">
               <span className="font-medium text-gray-700">Your Progress</span>
-              <span className="font-bold text-green-600">
+              <span className="font-bold text-indigo-600">
                 {module.progress_percentage === 100 ? 'Completed!' : `${module.progress_percentage}%`}
               </span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
+            <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
               <div
-                className="bg-green-500 h-3 rounded-full"
+                className="bg-gradient-to-r from-indigo-500 to-purple-500 h-3 rounded-full transition-all duration-1000 ease-out"
                 style={{ width: `${module.progress_percentage || 0}%` }}
               ></div>
             </div>
@@ -166,32 +168,32 @@ export default function ModuleDetailPage() {
         </div>
 
         {/* Tabs */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="border-b border-gray-200">
-            <nav className="flex space-x-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8">
+          <div className="bg-white rounded-2xl shadow-sm p-2 inline-flex gap-2">
+            <nav className="flex space-x-2">
               <button
                 onClick={() => setActiveTab('overview')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'overview'
-                  ? 'border-green-500 text-green-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                className={`px-6 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${activeTab === 'overview'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                   }`}
               >
                 Overview
               </button>
               <button
                 onClick={() => setActiveTab('units')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'units'
-                  ? 'border-green-500 text-green-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                className={`px-6 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${activeTab === 'units'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                   }`}
               >
                 Units ({module.unit_count})
               </button>
               <button
                 onClick={() => setActiveTab('progress')}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === 'progress'
-                  ? 'border-green-500 text-green-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                className={`px-6 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${activeTab === 'progress'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                   }`}
               >
                 My Progress
@@ -218,39 +220,39 @@ export default function ModuleDetailPage() {
                 <div className="bg-white rounded-xl shadow p-6">
                   <h2 className="text-xl font-bold text-gray-800 mb-4">What You'll Learn</h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-start">
-                      <div className="bg-green-100 p-2 rounded-lg mr-3">
-                        <span className="text-green-600">✅</span>
+                    <div className="flex items-start bg-gray-50 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-green-100">
+                      <div className="bg-green-100 p-3 rounded-xl mr-4 text-xl shrink-0">
+                        <span className="text-green-600"><LuCheck /></span>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-800">Basic Concepts</p>
+                        <p className="font-bold text-gray-800">Basic Concepts</p>
                         <p className="text-sm text-gray-600">Understand fundamental ICT concepts</p>
                       </div>
                     </div>
-                    <div className="flex items-start">
-                      <div className="bg-blue-100 p-2 rounded-lg mr-3">
-                        <span className="text-blue-600">💻</span>
+                    <div className="flex items-start bg-gray-50 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-blue-100">
+                      <div className="bg-blue-100 p-3 rounded-xl mr-4 text-xl shrink-0">
+                        <span className="text-blue-600"><LuLaptop /></span>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-800">Practical Skills</p>
+                        <p className="font-bold text-gray-800">Practical Skills</p>
                         <p className="text-sm text-gray-600">Apply knowledge through assignments</p>
                       </div>
                     </div>
-                    <div className="flex items-start">
-                      <div className="bg-purple-100 p-2 rounded-lg mr-3">
-                        <span className="text-purple-600">📊</span>
+                    <div className="flex items-start bg-gray-50 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-purple-100">
+                      <div className="bg-purple-100 p-3 rounded-xl mr-4 text-xl shrink-0">
+                        <span className="text-purple-600"><LuActivity /></span>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-800">Assessment</p>
+                        <p className="font-bold text-gray-800">Assessment</p>
                         <p className="text-sm text-gray-600">Test your knowledge with quizzes</p>
                       </div>
                     </div>
-                    <div className="flex items-start">
-                      <div className="bg-yellow-100 p-2 rounded-lg mr-3">
-                        <span className="text-yellow-600">🏆</span>
+                    <div className="flex items-start bg-gray-50 p-4 rounded-xl hover:bg-white hover:shadow-md transition-all border border-transparent hover:border-yellow-100">
+                      <div className="bg-yellow-100 p-3 rounded-xl mr-4 text-xl shrink-0">
+                        <span className="text-yellow-600"><LuTrophy /></span>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-800">Certification</p>
+                        <p className="font-bold text-gray-800">Certification</p>
                         <p className="text-sm text-gray-600">Earn certificate upon completion</p>
                       </div>
                     </div>
@@ -282,20 +284,20 @@ export default function ModuleDetailPage() {
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-green-50 to-blue-50 rounded-xl shadow p-6 border border-green-200">
+                <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl shadow p-6 border border-indigo-100">
                   <h2 className="text-xl font-bold text-gray-800 mb-4">Ready to Start?</h2>
                   <p className="text-gray-600 mb-6">
                     Begin your learning journey with this module. Work through units at your own pace.
                   </p>
                   <button
                     onClick={handleStartLearning}
-                    className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg mb-3"
+                    className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg mb-3 transition-colors shadow-lg hover:shadow-indigo-500/25"
                   >
                     Start Learning Module
                   </button>
                   <button
                     onClick={() => router.push('/student/modules')}
-                    className="w-full py-3 bg-white text-gray-700 border border-gray-300 font-medium rounded-lg hover:bg-gray-50"
+                    className="w-full py-3 bg-white text-gray-700 border border-gray-200 font-medium rounded-lg hover:bg-gray-50 transition-colors"
                   >
                     Browse Other Modules
                   </button>
@@ -312,16 +314,17 @@ export default function ModuleDetailPage() {
                 {units.length > 0 ? (
                   <div className="space-y-4">
                     {units.map((unit) => (
-                      <div key={unit.unit_id} className="border border-gray-200 rounded-lg p-4 hover:border-green-500 transition-colors">
+                      <div key={unit.unit_id} className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-2xl transition-all duration-300 border border-transparent hover:border-indigo-100 transform hover:-translate-y-1 group relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-full -mr-16 -mt-16 transition-transform group-hover:scale-110"></div>
                         <div className="flex justify-between items-start mb-2">
                           <div>
-                            <span className="text-xs font-semibold text-green-600 uppercase tracking-wider">
+                            <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">
                               Unit {unit.unit_order}
                             </span>
                             <h3 className="text-lg font-bold text-gray-800">{unit.unit_name}</h3>
                           </div>
                           {unit.progress_percentage !== undefined && unit.progress_percentage > 0 && (
-                            <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full font-medium">
+                            <span className="bg-indigo-100 text-indigo-700 text-xs px-2 py-1 rounded-full font-medium">
                               {unit.progress_percentage}%
                             </span>
                           )}
@@ -335,7 +338,7 @@ export default function ModuleDetailPage() {
                           </div>
                           <button
                             onClick={() => router.push(`/student/modules/${moduleId}/navigation`)}
-                            className="text-green-600 hover:text-green-700 font-medium text-sm flex items-center"
+                            className="text-indigo-600 hover:text-indigo-700 font-bold text-sm flex items-center bg-indigo-50 px-4 py-2 rounded-lg hover:bg-indigo-100 transition-colors"
                           >
                             Go to Class <span className="ml-1">→</span>
                           </button>
@@ -345,7 +348,7 @@ export default function ModuleDetailPage() {
                   </div>
                 ) : (
                   <div className="text-center py-12">
-                    <div className="text-gray-400 text-5xl mb-6">📖</div>
+                    <div className="text-gray-300 text-6xl mb-6 flex justify-center"><LuBook /></div>
                     <h3 className="text-xl font-semibold text-gray-800 mb-3">
                       Units Coming Soon
                     </h3>
@@ -355,7 +358,7 @@ export default function ModuleDetailPage() {
                     </p>
                     <button
                       onClick={() => setActiveTab('overview')}
-                      className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg"
+                      className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md hover:shadow-indigo-500/25 transition-all"
                     >
                       Back to Overview
                     </button>
@@ -370,11 +373,11 @@ export default function ModuleDetailPage() {
               <h2 className="text-xl font-bold text-gray-800 mb-6">My Learning Progress</h2>
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  <div className="bg-green-50 p-6 rounded-xl border border-green-200">
-                    <div className="text-3xl font-bold text-green-600 mb-2">
+                  <div className="bg-indigo-50 p-6 rounded-xl border border-indigo-200">
+                    <div className="text-3xl font-bold text-indigo-600 mb-2">
                       {module.progress_percentage || 0}%
                     </div>
-                    <div className="text-sm text-green-800 font-medium">Overall Progress</div>
+                    <div className="text-sm text-indigo-800 font-medium">Overall Progress</div>
                   </div>
                   <div className="bg-blue-50 p-6 rounded-xl border border-blue-200">
                     <div className="text-3xl font-bold text-blue-600 mb-2">
@@ -393,7 +396,7 @@ export default function ModuleDetailPage() {
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-4">Study History</h3>
                   <div className="text-center py-12">
-                    <div className="text-gray-400 text-4xl mb-6">📊</div>
+                    <div className="text-gray-300 text-5xl mb-6 flex justify-center"><LuActivity /></div>
                     <p className="text-gray-600">
                       Your detailed progress tracking will appear here as you complete lessons.
                     </p>
@@ -404,6 +407,6 @@ export default function ModuleDetailPage() {
           )}
         </div>
       </div>
-    </StudentRoute>
+    </StudentRoute >
   );
 }

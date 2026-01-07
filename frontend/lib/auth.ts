@@ -1,6 +1,7 @@
 // Authentication types and constants
 
 export interface User {
+  id?: number | string; // Compatibility alias for userId
   userId: number;
   username: string;
   fullName: string;
