@@ -1,5 +1,17 @@
 import { LoginCredentials, LoginResponse, User } from './auth';
-// Ensure you have defined these types in './types/module'
+
+// Dashboard Types
+import {
+  DashboardData,
+  DashboardOverview,
+  UpcomingAssignment,
+  GradeOverview,
+  PerformanceHistory,
+  ModuleProgress,
+  StudyTimeStat
+} from './types/dashboard';
+
+// Module Types
 import {
   Module,
   CreateModuleData,
@@ -8,7 +20,7 @@ import {
   ModuleStatistics
 } from './types/module';
 
-// New imports for Navigation functionality
+// Navigation Types
 import {
   ModuleHierarchy,
   Unit,
@@ -18,14 +30,14 @@ import {
   BookmarkData
 } from './types/navigation';
 
-// New imports for Content functionality
+// Content Types
 import {
   ContentResponse,
   DownloadableContent,
   DownloadUrlResponse
 } from './types/content';
 
-// New imports for Assignment functionality
+// Assignment Types
 import {
   AssignmentDetailsResponse,
   StartAttemptResponse,
@@ -57,13 +69,13 @@ class ApiClient {
         ...defaultHeaders,
         ...options.headers,
       },
-      credentials: 'include', // This is crucial for cookie-based auth
+      credentials: 'include', // Crucial for cookie-based auth
     };
 
     try {
       const response = await fetch(url, requestOptions);
 
-      // Handle non-JSON responses (prevents crashing on 404/500 HTML pages)
+      // Handle non-JSON responses
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
         throw new Error(`Invalid response type: ${contentType}`);
@@ -138,8 +150,11 @@ class ApiClient {
   // DASHBOARD DATA
   // ======================
 
+  // --- Role Based Dashboard Fetchers ---
+
   async getStudentDashboard() {
-    return this.request('/auth/dashboard/student');
+    const response = await this.request<{ data: DashboardData }>('/dashboard');
+    return response.data;
   }
 
   async getTeacherDashboard() {
@@ -150,30 +165,69 @@ class ApiClient {
     return this.request('/auth/dashboard/admin');
   }
 
-  async getDashboardData() {
-    // Helper: First get user role, then fetch appropriate dashboard
+  /**
+   * Main Dashboard Entry Point
+   * Fetches data based on the current user's role
+   */
+  async getDashboardData(): Promise<DashboardData> {
     const userResponse = await this.getCurrentUser();
     const role = userResponse.data?.role;
 
     switch (role) {
       case 'student':
-        return this.getStudentDashboard();
+        return this.getStudentDashboard() as Promise<DashboardData>;
       case 'teacher':
-        return this.getTeacherDashboard();
+        return this.getTeacherDashboard() as Promise<any>; // TODO: Add TeacherDashboard type
       case 'admin':
-        return this.getAdminDashboard();
+        return this.getAdminDashboard() as Promise<any>; // TODO: Add AdminDashboard type
       default:
         throw new Error(`Unknown or missing user role: ${role}`);
     }
+  }
+
+  // --- Specific Dashboard Widgets (Migrated from dashboardAPI) ---
+
+  async getDashboardOverview(): Promise<DashboardOverview> {
+    const response = await this.request<{ data: DashboardOverview }>('/dashboard/overview');
+    return response.data;
+  }
+
+  async getUpcomingAssignments(limit?: number): Promise<UpcomingAssignment[]> {
+    const queryString = limit ? `?limit=${limit}` : '';
+    const response = await this.request<{ data: UpcomingAssignment[] }>(`/dashboard/upcoming-assignments${queryString}`);
+    return response.data;
+  }
+
+  async getGradesOverview(): Promise<GradeOverview[]> {
+    const response = await this.request<{ data: GradeOverview[] }>('/dashboard/grades');
+    return response.data;
+  }
+
+  async getPerformanceHistory(days?: number): Promise<PerformanceHistory[]> {
+    const queryString = days ? `?days=${days}` : '';
+    const response = await this.request<{ data: PerformanceHistory[] }>(`/dashboard/performance-history${queryString}`);
+    return response.data;
+  }
+
+  async getModuleProgress(): Promise<ModuleProgress[]> {
+    const response = await this.request<{ data: ModuleProgress[] }>('/dashboard/module-progress');
+    return response.data;
+  }
+
+  async getStudyTimeStats(): Promise<StudyTimeStat[]> {
+    const response = await this.request<{ data: StudyTimeStat[] }>('/dashboard/study-time');
+    return response.data;
+  }
+
+  async getActivityStreak(): Promise<{ current_streak: number }> {
+    const response = await this.request<{ data: { current_streak: number } }>('/dashboard/activity-streak');
+    return response.data;
   }
 
   // ======================
   // MODULE MANAGEMENT
   // ======================
 
-  /**
-   * Get a list of modules with optional filters
-   */
   async getModules(filters?: ModuleFilters): Promise<{
     success: boolean;
     count: number;
@@ -184,7 +238,6 @@ class ApiClient {
     if (filters) {
       if (filters.grade_level) queryParams.set('grade_level', filters.grade_level);
       if (filters.subject) queryParams.set('subject', filters.subject);
-      // Explicit check for undefined so false is preserved
       if (filters.is_published !== undefined) {
         queryParams.set('is_published', filters.is_published.toString());
       }
@@ -196,9 +249,6 @@ class ApiClient {
     return this.request(url);
   }
 
-  /**
-   * Get a single module by ID
-   */
   async getModule(id: number): Promise<{
     success: boolean;
     data: Module
@@ -206,9 +256,6 @@ class ApiClient {
     return this.request(`/modules/${id}`);
   }
 
-  /**
-   * Create a new module
-   */
   async createModule(moduleData: CreateModuleData): Promise<{
     success: boolean;
     message: string;
@@ -220,9 +267,6 @@ class ApiClient {
     });
   }
 
-  /**
-   * Update an existing module
-   */
   async updateModule(id: number, updateData: UpdateModuleData): Promise<{
     success: boolean;
     message: string;
@@ -234,9 +278,6 @@ class ApiClient {
     });
   }
 
-  /**
-   * Delete a module
-   */
   async deleteModule(id: number): Promise<{
     success: boolean;
     message: string
@@ -246,9 +287,6 @@ class ApiClient {
     });
   }
 
-  /**
-   * Toggle publish status (admin/teacher feature)
-   */
   async togglePublishModule(id: number, publish: boolean): Promise<{
     success: boolean;
     message: string;
@@ -260,9 +298,6 @@ class ApiClient {
     });
   }
 
-  /**
-   * Get statistics (total modules, subject breakdown, etc.)
-   */
   async getModuleStatistics(): Promise<{
     success: boolean;
     data: ModuleStatistics
@@ -270,9 +305,6 @@ class ApiClient {
     return this.request('/modules/statistics');
   }
 
-  /**
-   * Get available grade levels for dropdowns
-   */
   async getGradeLevels(): Promise<{
     success: boolean;
     data: string[]
@@ -280,9 +312,6 @@ class ApiClient {
     return this.request('/modules/grade-levels');
   }
 
-  /**
-   * Search modules by text query (Finds Modules)
-   */
   async searchModules(query: string): Promise<{
     success: boolean;
     count: number;
@@ -295,9 +324,6 @@ class ApiClient {
   // MODULE NAVIGATION
   // ======================
 
-  /**
-   * Get the full hierarchy (units/parts) of a specific module
-   */
   async getModuleHierarchy(moduleId: number): Promise<{
     success: boolean;
     data: ModuleHierarchy;
@@ -305,9 +331,6 @@ class ApiClient {
     return this.request(`/navigation/modules/${moduleId}/hierarchy`);
   }
 
-  /**
-   * Get details for a specific unit, including its learning parts
-   */
   async getUnitDetails(unitId: number): Promise<{
     success: boolean;
     data: {
@@ -320,9 +343,6 @@ class ApiClient {
     return this.request(`/navigation/units/${unitId}`);
   }
 
-  /**
-   * Get a specific learning part (content) with navigation context
-   */
   async getLearningPart(partId: number): Promise<{
     success: boolean;
     data: {
@@ -334,9 +354,6 @@ class ApiClient {
     return this.request(`/navigation/parts/${partId}`);
   }
 
-  /**
-   * Update student progress for a specific part
-   */
   async updateProgress(partId: number, progress: ProgressUpdate): Promise<{
     success: boolean;
     message: string;
@@ -352,9 +369,6 @@ class ApiClient {
   // PROGRESS & BOOKMARKS
   // ======================
 
-  /**
-   * Get overview of student progress across modules
-   */
   async getProgressOverview(): Promise<{
     success: boolean;
     data: StudentProgress;
@@ -362,9 +376,6 @@ class ApiClient {
     return this.request('/navigation/progress/overview');
   }
 
-  /**
-   * Get the last accessed point to resume learning
-   */
   async getResumePoint(): Promise<{
     success: boolean;
     message: string;
@@ -373,9 +384,6 @@ class ApiClient {
     return this.request('/navigation/resume');
   }
 
-  /**
-   * Create a new bookmark
-   */
   async addBookmark(bookmarkData: BookmarkData): Promise<{
     success: boolean;
     message: string;
@@ -387,9 +395,6 @@ class ApiClient {
     });
   }
 
-  /**
-   * Remove a bookmark
-   */
   async removeBookmark(bookmarkId: number): Promise<{
     success: boolean;
     message: string;
@@ -403,9 +408,6 @@ class ApiClient {
   // CONTENT SEARCH
   // ======================
 
-  /**
-   * Search for content *inside* a specific module
-   */
   async searchInModule(moduleId: number, query: string): Promise<{
     success: boolean;
     count: number;
@@ -418,43 +420,28 @@ class ApiClient {
   // CONTENT MANAGEMENT
   // ======================
 
-  /**
-   * Get content details (Wraps the response data)
-   */
   async getContentDetails(partId: number): Promise<ContentResponse> {
     const response = await this.request<{ data: ContentResponse }>(`/content/${partId}`);
     return response.data;
   }
 
-  /**
-   * Mark content as completed
-   */
   async markAsCompleted(partId: number): Promise<void> {
     await this.request(`/content/${partId}/complete`, {
       method: 'POST',
     });
   }
 
-  /**
-   * Get download URL for content
-   */
   async getDownloadUrl(partId: number): Promise<DownloadUrlResponse> {
     const response = await this.request<{ data: DownloadUrlResponse }>(`/content/${partId}/download-url`);
     return response.data;
   }
 
-  /**
-   * Get all downloadable content, optionally filtered by module
-   */
   async getDownloadableContent(moduleId?: number): Promise<DownloadableContent[]> {
     const queryString = moduleId ? `?moduleId=${moduleId}` : '';
     const response = await this.request<{ data: DownloadableContent[] }>(`/content/downloads/list${queryString}`);
     return response.data;
   }
 
-  /**
-   * Update access time for analytics
-   */
   async updateAccessTime(partId: number, timeSpent: number): Promise<void> {
     await this.request(`/content/${partId}/access-time`, {
       method: 'POST',
@@ -466,19 +453,11 @@ class ApiClient {
   // ASSIGNMENT SYSTEM
   // ======================
 
-  /**
-   * Get details for an assignment (time limit, instructions, etc.)
-   */
   async getAssignmentDetails(partId: number): Promise<AssignmentDetailsResponse> {
-    // Note: 'data' wrapper is handled in type or here.
-    // Assuming API returns { success: true, data: { ... } }
     const response = await this.request<{ data: AssignmentDetailsResponse }>(`/assignments/${partId}/details`);
     return response.data;
   }
 
-  /**
-   * Start a new assignment attempt
-   */
   async startAssignmentAttempt(partId: number): Promise<StartAttemptResponse> {
     const response = await this.request<{ data: StartAttemptResponse }>(`/assignments/${partId}/start`, {
       method: 'POST',
@@ -486,9 +465,6 @@ class ApiClient {
     return response.data;
   }
 
-  /**
-   * Save progress (manual save triggered by user or navigation)
-   */
   async saveAssignmentProgress(
     attemptId: number,
     answers: any,
@@ -501,10 +477,6 @@ class ApiClient {
     });
   }
 
-  /**
-   * Auto-save progress (background sync)
-   * Returns timed_out status if the server calculates time is up
-   */
   async autoSaveAssignmentProgress(attemptId: number, timeRemaining: number): Promise<{ timed_out?: boolean }> {
     return this.request<{ timed_out?: boolean }>(`/assignments/attempt/${attemptId}/auto-save`, {
       method: 'POST',
@@ -512,9 +484,6 @@ class ApiClient {
     });
   }
 
-  /**
-   * Submit the assignment for grading
-   */
   async submitAssignment(attemptId: number, answers: any): Promise<SubmissionResponse> {
     const response = await this.request<{ data: SubmissionResponse }>(`/assignments/attempt/${attemptId}/submit`, {
       method: 'POST',
@@ -523,9 +492,6 @@ class ApiClient {
     return response.data;
   }
 
-  /**
-   * Get a review of a completed submission
-   */
   async getSubmissionReview(submissionId: number): Promise<{ submission: Submission, questions: any[] }> {
     const response = await this.request<{ data: { submission: Submission, questions: any[] } }>(
       `/assignments/submission/${submissionId}/review`
@@ -533,17 +499,11 @@ class ApiClient {
     return response.data;
   }
 
-  /**
-   * Get history of attempts for a specific assignment
-   */
   async getAssignmentHistory(assignmentId: number): Promise<Submission[]> {
     const response = await this.request<{ data: Submission[] }>(`/assignments/${assignmentId}/history`);
     return response.data;
   }
 
-  /**
-   * Get all assignments assigned to the current student
-   */
   async getStudentAssignments(): Promise<StudentAssignment[]> {
     const response = await this.request<{ data: StudentAssignment[] }>(`/assignments/student/all`);
     return response.data;
@@ -551,4 +511,6 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
+// Exporting as assignmentAPI as well to maintain backward compatibility if needed
 export const assignmentAPI = apiClient;
+export const dashboardAPI = apiClient;

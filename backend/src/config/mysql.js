@@ -75,6 +75,20 @@ class Database {
     return this.query(sql, params);
   }
 
+  async rawQuery(sql, params = []) {
+    try {
+      if (!this.pool || !this.isConnected) {
+        await this.connect();
+      }
+      console.log(`📊 Executing Raw SQL: ${sql.substring(0, 100)}...`);
+      const [results] = await this.pool.query(sql, params);
+      return results;
+    } catch (error) {
+      console.error('❌ Database Raw Query Error:', error.message);
+      throw error;
+    }
+  }
+
 
   async close() {
     if (this.pool) {
