@@ -60,6 +60,15 @@ import {
   TeacherFilters
 } from './types/teacher';
 
+// Analytics Types
+import {
+  StudentAnalytics,
+  AnalyticsSummary,
+  ImprovementRecommendation,
+  StudySession,
+  WeakAreaInput
+} from './types/analytics';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 class ApiClient {
@@ -614,10 +623,135 @@ class ApiClient {
     const response = await this.request<{ data: StudentAssignment[] }>(`/assignments/student/all`);
     return response.data;
   }
+
+  // ======================
+  // ANALYTICS & INSIGHTS
+  // ======================
+
+  async getStudentAnalytics(studentId: number, moduleId?: number): Promise<StudentAnalytics> {
+    const url = moduleId
+      ? `/analytics/student/${studentId}/comprehensive?module_id=${moduleId}`
+      : `/analytics/student/${studentId}/comprehensive`;
+
+    const response = await this.request<{ data: StudentAnalytics }>(url);
+    return response.data;
+  }
+
+  async getStudentProgressAnalytics(studentId: number, filters?: any): Promise<any[]> {
+    const queryParams = new URLSearchParams(filters || {}).toString();
+    const url = queryParams
+      ? `/analytics/student/${studentId}/progress?${queryParams}`
+      : `/analytics/student/${studentId}/progress`;
+
+    const response = await this.request<{ data: any[] }>(url);
+    return response.data;
+  }
+
+  async getStudentAssignmentPerformance(studentId: number, filters?: any): Promise<any[]> {
+    const queryParams = new URLSearchParams(filters || {}).toString();
+    const url = queryParams
+      ? `/analytics/student/${studentId}/assignments?${queryParams}`
+      : `/analytics/student/${studentId}/assignments`;
+
+    const response = await this.request<{ data: any[] }>(url);
+    return response.data;
+  }
+
+  async getTimeSpentAnalysis(studentId: number, filters?: any): Promise<any[]> {
+    const queryParams = new URLSearchParams(filters || {}).toString();
+    const url = queryParams
+      ? `/analytics/student/${studentId}/time-spent?${queryParams}`
+      : `/analytics/student/${studentId}/time-spent`;
+
+    const response = await this.request<{ data: any[] }>(url);
+    return response.data;
+  }
+
+  async getWeakAreas(studentId: number, filters?: any): Promise<any[]> {
+    const queryParams = new URLSearchParams(filters || {}).toString();
+    const url = queryParams
+      ? `/analytics/student/${studentId}/weak-areas?${queryParams}`
+      : `/analytics/student/${studentId}/weak-areas`;
+
+    const response = await this.request<{ data: any[] }>(url);
+    return response.data;
+  }
+
+  async addWeakArea(studentId: number, weakAreaData: WeakAreaInput): Promise<{ weak_area_id: number }> {
+    const response = await this.request<{ data: { weak_area_id: number } }>(`/analytics/student/${studentId}/weak-areas`, {
+      method: 'POST',
+      body: JSON.stringify(weakAreaData)
+    });
+    return response.data;
+  }
+
+  async updateWeakAreaStatus(weakAreaId: number, status: string, notes?: string): Promise<void> {
+    await this.request(`/analytics/weak-areas/${weakAreaId}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status, notes })
+    });
+  }
+
+  async getLearningPatterns(studentId: number, moduleId?: number): Promise<any[]> {
+    const url = moduleId
+      ? `/analytics/student/${studentId}/learning-patterns?module_id=${moduleId}`
+      : `/analytics/student/${studentId}/learning-patterns`;
+
+    const response = await this.request<{ data: any[] }>(url);
+    return response.data;
+  }
+
+  async trackStudySession(studentId: number, sessionData: StudySession): Promise<{ tracking_id: number }> {
+    const response = await this.request<{ data: { tracking_id: number } }>(`/analytics/student/${studentId}/track-session`, {
+      method: 'POST',
+      body: JSON.stringify(sessionData)
+    });
+    return response.data;
+  }
+
+  async getStudyHabits(studentId: number, days?: number): Promise<any[]> {
+    const url = days
+      ? `/analytics/student/${studentId}/study-habits?days=${days}`
+      : `/analytics/student/${studentId}/study-habits`;
+
+    const response = await this.request<{ data: any[] }>(url);
+    return response.data;
+  }
+
+  async getPerformanceTrends(studentId: number, moduleId?: number, weeks?: number): Promise<any[]> {
+    const params = new URLSearchParams();
+    if (moduleId) params.append('module_id', moduleId.toString());
+    if (weeks) params.append('weeks', weeks.toString());
+
+    const url = `/analytics/student/${studentId}/performance-trends?${params.toString()}`;
+    const response = await this.request<{ data: any[] }>(url);
+    return response.data;
+  }
+
+  async getContentTypePerformance(studentId: number, moduleId?: number): Promise<any[]> {
+    const url = moduleId
+      ? `/analytics/student/${studentId}/content-performance?module_id=${moduleId}`
+      : `/analytics/student/${studentId}/content-performance`;
+
+    const response = await this.request<{ data: any[] }>(url);
+    return response.data;
+  }
+
+  async getImprovementRecommendations(studentId: number): Promise<ImprovementRecommendation[]> {
+    const response = await this.request<{ data: ImprovementRecommendation[] }>(`/analytics/student/${studentId}/recommendations`);
+    return response.data;
+  }
+
+  async getAnalyticsSummary(studentId: number): Promise<AnalyticsSummary> {
+    const response = await this.request<{ data: AnalyticsSummary }>(`/analytics/student/${studentId}/summary`);
+    return response.data;
+  }
 }
 
 export const apiClient = new ApiClient();
+
 // Exporting aliases to maintain backward compatibility and support specific imports
 export const assignmentAPI = apiClient;
 export const dashboardAPI = apiClient;
 export const teacherAPI = apiClient;
+export const analyticsAPI = apiClient;

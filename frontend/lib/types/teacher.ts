@@ -129,6 +129,7 @@ export interface TeacherDashboardData {
         last_activity: string;
     }>;
     recent_activity: Array<{
+        student_id: number;
         module_name: string;
         student_name: string;
         class_grade: string;

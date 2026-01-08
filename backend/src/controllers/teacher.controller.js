@@ -137,7 +137,17 @@ class TeacherController {
         const teacherId = req.user.userId;
         const filters = req.query;
 
-        const students = await TeacherModel.getClassStudents(teacherId, filters);
+        let students = await TeacherModel.getClassStudents(teacherId, filters);
+
+        // Cast numeric fields
+        students = students.map(s => ({
+            ...s,
+            avg_score: s.avg_score ? parseFloat(s.avg_score) : null,
+            completion_percentage: parseFloat(s.completion_percentage || 0),
+            total_study_time_minutes: parseFloat(s.total_study_time_minutes || 0),
+            completed_parts: parseInt(s.completed_parts || 0),
+            total_parts: parseInt(s.total_parts || 0)
+        }));
 
         res.json({
             success: true,
@@ -172,11 +182,23 @@ class TeacherController {
             throw new AppError('Student ID is required', 400);
         }
 
-        const performance = await TeacherModel.getStudentPerformance(
+        let performance = await TeacherModel.getStudentPerformance(
             teacherId,
             studentId,
             module_id
         );
+
+        // Cast numeric fields
+        performance = performance.map(p => ({
+            ...p,
+            avg_score: p.avg_score ? parseFloat(p.avg_score) : null,
+            completion_percentage: parseFloat(p.completion_percentage || 0),
+            total_study_time_minutes: parseFloat(p.total_study_time_minutes || 0),
+            completed_parts: parseInt(p.completed_parts || 0),
+            total_parts: parseInt(p.total_parts || 0),
+            total_assignments: parseInt(p.total_assignments || 0),
+            passed_assignments: parseInt(p.passed_assignments || 0)
+        }));
 
         res.json({
             success: true,
@@ -268,11 +290,19 @@ class TeacherController {
         const teacherId = req.user.userId;
         const { limit, ...filters } = req.query;
 
-        const performers = await TeacherModel.getTopPerformers(
+        let performers = await TeacherModel.getTopPerformers(
             teacherId,
             parseInt(limit) || 10,
             filters
         );
+
+        // Cast numeric fields
+        performers = performers.map(p => ({
+            ...p,
+            avg_score: p.avg_score ? parseFloat(p.avg_score) : null,
+            completion_rate: parseFloat(p.completion_rate || 0),
+            total_study_time_minutes: parseFloat(p.total_study_time_minutes || 0)
+        }));
 
         res.json({
             success: true,
@@ -285,11 +315,20 @@ class TeacherController {
         const teacherId = req.user.userId;
         const { limit, ...filters } = req.query;
 
-        const students = await TeacherModel.getStudentsNeedingAttention(
+        let students = await TeacherModel.getStudentsNeedingAttention(
             teacherId,
             parseInt(limit) || 10,
             filters
         );
+
+        // Cast numeric fields
+        students = students.map(s => ({
+            ...s,
+            avg_score: s.avg_score ? parseFloat(s.avg_score) : null,
+            completion_rate: parseFloat(s.completion_rate || 0),
+            total_study_time_minutes: parseFloat(s.total_study_time_minutes || 0),
+            days_inactive: parseInt(s.days_inactive || 0)
+        }));
 
         res.json({
             success: true,

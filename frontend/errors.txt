@@ -1,5 +1,0 @@
-
-> frontend@0.1.0 type-check
-> tsc --noEmit
-
-app/student/modules/[id]/navigation/page.tsx(19,3): error TS2724: '"react-icons/lu"' has no exported member named 'LuFileSignature'. Did you mean 'LuSignature'?

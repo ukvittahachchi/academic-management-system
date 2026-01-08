@@ -32,10 +32,10 @@ export default function TeacherDashboard() {
     }, []);
 
     useEffect(() => {
-        if (selectedClass || performanceFilters.module_id || performanceFilters.class_section) {
+        if (activeView === 'students') {
             loadClassStudents();
         }
-    }, [selectedClass, performanceFilters]);
+    }, [activeView, performanceFilters]);
 
     const loadDashboardData = async () => {
         try {
@@ -271,7 +271,11 @@ export default function TeacherDashboard() {
                                     </div>
                                     <div className="divide-y divide-gray-200">
                                         {top_performers.map((student, index) => (
-                                            <div key={student.student_id} className="p-4 hover:bg-gray-50">
+                                            <div
+                                                key={student.student_id}
+                                                className="p-4 hover:bg-gray-50 cursor-pointer"
+                                                onClick={() => handleStudentClick(student)}
+                                            >
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center">
                                                         <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-yellow-100 to-yellow-200 rounded-full flex items-center justify-center">
@@ -290,7 +294,7 @@ export default function TeacherDashboard() {
                                                     </div>
                                                     <div className="text-right">
                                                         <div className="text-lg font-bold text-green-600">
-                                                            {student.avg_score.toFixed(1)}
+                                                            {student.avg_score !== null && student.avg_score !== undefined ? Number(student.avg_score).toFixed(1) : 'N/A'}
                                                         </div>
                                                         <div className="text-xs text-gray-500">
                                                             Avg Score
@@ -318,7 +322,11 @@ export default function TeacherDashboard() {
                                     </div>
                                     <div className="divide-y divide-gray-200">
                                         {students_needing_attention.map((student) => (
-                                            <div key={student.student_id} className="p-4 hover:bg-gray-50">
+                                            <div
+                                                key={student.student_id}
+                                                className="p-4 hover:bg-gray-50 cursor-pointer"
+                                                onClick={() => handleStudentClick(student)}
+                                            >
                                                 <div className="flex items-center justify-between">
                                                     <div className="flex items-center">
                                                         <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-r from-red-100 to-red-200 rounded-full flex items-center justify-center">
@@ -335,7 +343,7 @@ export default function TeacherDashboard() {
                                                     </div>
                                                     <div className="text-right">
                                                         <div className="text-lg font-bold text-red-600">
-                                                            {student.avg_score?.toFixed(1) || 'N/A'}
+                                                            {student.avg_score !== null && student.avg_score !== undefined ? Number(student.avg_score).toFixed(1) : 'N/A'}
                                                         </div>
                                                         <div className="text-xs text-gray-500">
                                                             Avg Score
@@ -364,7 +372,11 @@ export default function TeacherDashboard() {
                                 </div>
                                 <div className="divide-y divide-gray-200">
                                     {recent_activity.slice(0, 5).map((activity, index) => (
-                                        <div key={index} className="p-4 hover:bg-gray-50">
+                                        <div
+                                            key={index}
+                                            className="p-4 hover:bg-gray-50 cursor-pointer"
+                                            onClick={() => handleStudentClick({ student_id: activity.student_id })}
+                                        >
                                             <div className="flex items-center justify-between">
                                                 <div className="flex items-center">
                                                     <div className="flex-shrink-0 w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">

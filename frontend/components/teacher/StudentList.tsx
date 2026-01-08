@@ -221,8 +221,8 @@ export default function StudentList({
                                 <td className="px-6 py-4">
                                     <div className="w-48">
                                         <div className="flex justify-between text-sm mb-1">
-                                            <span>{student.completion_percentage.toFixed(1)}%</span>
-                                            <span>{student.completed_parts}/{student.total_parts}</span>
+                                            <span>{(Number(student.completion_percentage) || 0).toFixed(1)}%</span>
+                                            <span>{student.completed_parts || 0}/{student.total_parts || 0}</span>
                                         </div>
                                         <div className="w-full bg-gray-200 rounded-full h-2">
                                             <div
@@ -235,7 +235,7 @@ export default function StudentList({
 
                                 <td className="px-6 py-4">
                                     <span className={`text-lg font-bold ${getScoreColor(student.avg_score)}`}>
-                                        {student.avg_score?.toFixed(1) || 'N/A'}
+                                        {student.avg_score !== null && student.avg_score !== undefined ? Number(student.avg_score).toFixed(1) : 'N/A'}
                                     </span>
                                 </td>
 
