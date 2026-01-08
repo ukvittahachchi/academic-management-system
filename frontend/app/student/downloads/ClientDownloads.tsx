@@ -77,6 +77,7 @@ export default function ClientDownloads() {
     };
 
     const getFileIcon = (mimeType: string) => {
+        if (!mimeType) return <LuPaperclip className="w-6 h-6" />;
         if (mimeType.includes('pdf')) return <LuFileText className="w-6 h-6" />;
         if (mimeType.includes('video')) return <LuVideo className="w-6 h-6" />;
         if (mimeType.includes('presentation') || mimeType.includes('powerpoint')) return <LuMonitorPlay className="w-6 h-6" />;
@@ -85,6 +86,7 @@ export default function ClientDownloads() {
     };
 
     const getFileColor = (mimeType: string) => {
+        if (!mimeType) return 'text-gray-500 bg-gray-50';
         if (mimeType.includes('pdf')) return 'text-red-500 bg-red-50';
         if (mimeType.includes('video')) return 'text-blue-500 bg-blue-50';
         if (mimeType.includes('presentation')) return 'text-orange-500 bg-orange-50';

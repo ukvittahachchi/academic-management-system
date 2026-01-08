@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRole?: 'student' | 'teacher' | 'admin';
+  allowedRoles?: string[];
   requiredPermissions?: string[];
   redirectTo?: string;
 }
@@ -14,6 +15,7 @@ interface ProtectedRouteProps {
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requiredRole,
+  allowedRoles = [],
   requiredPermissions = [],
   redirectTo = '/login',
 }) => {
@@ -34,6 +36,15 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         return;
       }
 
+      // Check allowed roles if provided
+      if (allowedRoles.length > 0) {
+        const hasAllowedRole = allowedRoles.some(role => hasRole(role));
+        if (!hasAllowedRole) {
+          router.push('/unauthorized');
+          return;
+        }
+      }
+
       // Check permissions if required
       if (requiredPermissions.length > 0) {
         const hasAllPermissions = requiredPermissions.every(perm => hasPermission(perm));
@@ -43,7 +54,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         }
       }
     }
-  }, [isAuthenticated, isLoading, user, requiredRole, requiredPermissions, router, redirectTo, hasRole, hasPermission]);
+  }, [isAuthenticated, isLoading, user, requiredRole, allowedRoles, requiredPermissions, router, redirectTo, hasRole, hasPermission]);
 
   // Show loading state
   if (isLoading) {
@@ -62,6 +73,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     // Check role authorization
     if (requiredRole && !hasRole(requiredRole)) {
       return null; // Will redirect in useEffect
+    }
+
+    // Check allowed roles authorization
+    if (allowedRoles.length > 0) {
+      const hasAllowedRole = allowedRoles.some(role => hasRole(role));
+      if (!hasAllowedRole) {
+        return null; // Will redirect in useEffect
+      }
     }
 
     // Check permission authorization

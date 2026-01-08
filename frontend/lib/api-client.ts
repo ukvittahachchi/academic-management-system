@@ -46,6 +46,20 @@ import {
   StudentAssignment
 } from './types/assignment';
 
+// Teacher Types
+import {
+  TeacherDashboardData,
+  TeacherClass,
+  TeacherStudent,
+  ClassPerformance,
+  AssignmentPerformance,
+  PerformanceDistribution,
+  ActivityTrend,
+  TopPerformer,
+  StudentNeedingAttention,
+  TeacherFilters
+} from './types/teacher';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 class ApiClient {
@@ -78,6 +92,8 @@ class ApiClient {
       // Handle non-JSON responses
       const contentType = response.headers.get('content-type');
       if (!contentType || !contentType.includes('application/json')) {
+        // Handle void responses or non-json errors
+        if (response.ok) return {} as T;
         throw new Error(`Invalid response type: ${contentType}`);
       }
 
@@ -87,7 +103,7 @@ class ApiClient {
         throw new Error(data.message || `HTTP ${response.status}`);
       }
 
-      return data;
+      return data; // Some APIs wrap data in { data: ... }, others return direct. Handled in methods below.
     } catch (error) {
       console.error('API Request Failed:', error);
       throw error;
@@ -157,8 +173,12 @@ class ApiClient {
     return response.data;
   }
 
-  async getTeacherDashboard() {
-    return this.request('/auth/dashboard/teacher');
+  /**
+   * Fetches the specific Teacher Dashboard Data
+   */
+  async getTeacherDashboard(): Promise<TeacherDashboardData> {
+    const response = await this.request<{ data: TeacherDashboardData }>('/teacher/dashboard');
+    return response.data;
   }
 
   async getAdminDashboard() {
@@ -169,23 +189,23 @@ class ApiClient {
    * Main Dashboard Entry Point
    * Fetches data based on the current user's role
    */
-  async getDashboardData(): Promise<DashboardData> {
+  async getDashboardData(): Promise<DashboardData | TeacherDashboardData | any> {
     const userResponse = await this.getCurrentUser();
     const role = userResponse.data?.role;
 
     switch (role) {
       case 'student':
-        return this.getStudentDashboard() as Promise<DashboardData>;
+        return this.getStudentDashboard();
       case 'teacher':
-        return this.getTeacherDashboard() as Promise<any>; // TODO: Add TeacherDashboard type
+        return this.getTeacherDashboard();
       case 'admin':
-        return this.getAdminDashboard() as Promise<any>; // TODO: Add AdminDashboard type
+        return this.getAdminDashboard();
       default:
         throw new Error(`Unknown or missing user role: ${role}`);
     }
   }
 
-  // --- Specific Dashboard Widgets (Migrated from dashboardAPI) ---
+  // --- Specific Dashboard Widgets (Student) ---
 
   async getDashboardOverview(): Promise<DashboardOverview> {
     const response = await this.request<{ data: DashboardOverview }>('/dashboard/overview');
@@ -221,6 +241,92 @@ class ApiClient {
 
   async getActivityStreak(): Promise<{ current_streak: number }> {
     const response = await this.request<{ data: { current_streak: number } }>('/dashboard/activity-streak');
+    return response.data;
+  }
+
+  // ======================
+  // TEACHER MANAGEMENT
+  // ======================
+
+  async getTeacherClasses(): Promise<TeacherClass[]> {
+    const response = await this.request<{ data: TeacherClass[] }>('/teacher/classes');
+    return response.data;
+  }
+
+  async getClassStudents(filters?: any): Promise<{
+    students: TeacherStudent[];
+    total: number;
+    filters: any;
+  }> {
+    const queryParams = new URLSearchParams(filters || {}).toString();
+    const url = queryParams ? `/teacher/students?${queryParams}` : '/teacher/students';
+    const response = await this.request<{ data: { students: TeacherStudent[]; total: number; filters: any } }>(url);
+    return response.data;
+  }
+
+  async getClassPerformance(filters?: any): Promise<ClassPerformance[]> {
+    const queryParams = new URLSearchParams(filters || {}).toString();
+    const url = queryParams ? `/teacher/performance?${queryParams}` : '/teacher/performance';
+    const response = await this.request<{ data: ClassPerformance[] }>(url);
+    return response.data;
+  }
+
+  async getStudentPerformance(studentId: number, moduleId?: number): Promise<any> {
+    const url = moduleId
+      ? `/teacher/students/${studentId}/performance?module_id=${moduleId}`
+      : `/teacher/students/${studentId}/performance`;
+    const response = await this.request<{ data: any }>(url);
+    return response.data;
+  }
+
+  async getAssignmentPerformance(filters?: any): Promise<AssignmentPerformance[]> {
+    const queryParams = new URLSearchParams(filters || {}).toString();
+    const url = queryParams ? `/teacher/assignments/performance?${queryParams}` : '/teacher/assignments/performance';
+    const response = await this.request<{ data: AssignmentPerformance[] }>(url);
+    return response.data;
+  }
+
+  async getPerformanceDistribution(filters?: any): Promise<PerformanceDistribution[]> {
+    const queryParams = new URLSearchParams(filters || {}).toString();
+    const url = queryParams ? `/teacher/performance/distribution?${queryParams}` : '/teacher/performance/distribution';
+    const response = await this.request<{ data: PerformanceDistribution[] }>(url);
+    return response.data;
+  }
+
+  async getActivityTrends(days?: number): Promise<ActivityTrend[]> {
+    const url = days ? `/teacher/activity/trends?days=${days}` : '/teacher/activity/trends';
+    const response = await this.request<{ data: ActivityTrend[] }>(url);
+    return response.data;
+  }
+
+  async getTopPerformers(limit?: number, filters?: any): Promise<TopPerformer[]> {
+    const params = new URLSearchParams();
+    if (limit) params.append('limit', limit.toString());
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, String(value));
+      });
+    }
+    const url = `/teacher/top-performers?${params.toString()}`;
+    const response = await this.request<{ data: TopPerformer[] }>(url);
+    return response.data;
+  }
+
+  async getStudentsNeedingAttention(limit?: number, filters?: any): Promise<StudentNeedingAttention[]> {
+    const params = new URLSearchParams();
+    if (limit) params.append('limit', limit.toString());
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, String(value));
+      });
+    }
+    const url = `/teacher/attention-needed?${params.toString()}`;
+    const response = await this.request<{ data: StudentNeedingAttention[] }>(url);
+    return response.data;
+  }
+
+  async getDashboardFilters(): Promise<TeacherFilters> {
+    const response = await this.request<{ data: TeacherFilters }>('/teacher/filters');
     return response.data;
   }
 
@@ -511,6 +617,7 @@ class ApiClient {
 }
 
 export const apiClient = new ApiClient();
-// Exporting as assignmentAPI as well to maintain backward compatibility if needed
+// Exporting aliases to maintain backward compatibility and support specific imports
 export const assignmentAPI = apiClient;
 export const dashboardAPI = apiClient;
+export const teacherAPI = apiClient;

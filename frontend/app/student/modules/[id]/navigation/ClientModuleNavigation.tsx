@@ -9,7 +9,7 @@ import { ModuleHierarchy } from '@/lib/types/navigation';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage, EmptyState } from '@/components/ui/ErrorMessage';
 import StudentButton from '@/components/ui/StudentButton';
-import { LuArrowLeft, LuSearch, LuBookOpen, LuMonitor, LuVideo, LuPen, LuCheck, LuClock, LuPlay, LuDownload, LuChevronDown, LuTrophy, LuLayers } from 'react-icons/lu';
+import { LuArrowLeft, LuSearch, LuBookOpen, LuMonitor, LuVideo, LuPen, LuCheck, LuClock, LuPlay, LuDownload, LuChevronDown, LuTrophy, LuLayers, LuLock } from 'react-icons/lu';
 
 export default function ClientModuleNavigation() {
     const params = useParams();
@@ -65,30 +65,68 @@ export default function ClientModuleNavigation() {
                 </header>
 
                 <main className="max-w-7xl mx-auto px-6 -mt-20 relative z-20 space-y-6">
-                    {units.map((unit) => (
-                        <div key={unit.unit_id} className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
-                            <div className="p-8 cursor-pointer hover:bg-gray-50/50" onClick={() => toggleUnit(unit.unit_id)}>
-                                <h2 className="text-2xl font-black text-gray-900">{unit.unit_name}</h2>
-                                <p className="text-gray-500 mt-2">{unit.description}</p>
-                            </div>
-                            {expandedUnits.includes(unit.unit_id) && (
-                                <div className="bg-gray-50/30 border-t border-gray-100 p-6 space-y-4">
-                                    {unit.parts?.map((part) => (
-                                        <div key={part.part_id} className="bg-white p-4 rounded-2xl border border-gray-100 flex items-center justify-between shadow-sm">
-                                            <div className="flex items-center gap-4">
-                                                <div className="p-3 bg-indigo-50 text-indigo-600 rounded-xl"><LuBookOpen /></div>
-                                                <div>
-                                                    <h4 className="font-bold text-gray-900">{part.title}</h4>
-                                                    <p className="text-xs text-gray-500 uppercase">{part.part_type}</p>
-                                                </div>
-                                            </div>
-                                            <StudentButton size="sm" onClick={() => router.push(`/student/modules/learn/${part.part_id}`)}>Start</StudentButton>
+                    {units.map((unit, index) => {
+                        const isLocked = index > 0 && (units[index - 1].progress_percentage || 0) < 100;
+
+                        return (
+                            <div key={unit.unit_id} className={`rounded-[2rem] shadow-sm border overflow-hidden transition-all duration-300 ${isLocked ? 'bg-gray-50 border-gray-200 opacity-75' : 'bg-white border-gray-100'}`}>
+                                <div
+                                    className={`p-8 flex justify-between items-start ${!isLocked ? 'cursor-pointer hover:bg-gray-50/50' : 'cursor-not-allowed'}`}
+                                    onClick={() => !isLocked && toggleUnit(unit.unit_id)}
+                                >
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <span className={`text-xs font-black uppercase tracking-widest px-3 py-1 rounded-lg ${isLocked ? 'bg-gray-200 text-gray-500' : 'bg-indigo-50 text-indigo-600'}`}>
+                                                Unit {index + 1}
+                                            </span>
+                                            {isLocked && <div className="flex items-center gap-1 text-xs font-bold text-gray-400"><LuLock className="w-3 h-3" /> Locked</div>}
+                                            {!isLocked && (unit.progress_percentage || 0) === 100 && <div className="flex items-center gap-1 text-xs font-bold text-green-600"><LuCheck className="w-3 h-3" /> Completed</div>}
                                         </div>
-                                    ))}
+                                        <h2 className={`text-2xl font-black ${isLocked ? 'text-gray-400' : 'text-gray-900'}`}>{unit.unit_name}</h2>
+                                        <p className={`mt-2 ${isLocked ? 'text-gray-400' : 'text-gray-500'}`}>{unit.description}</p>
+                                    </div>
+                                    <div className="ml-4">
+                                        {isLocked ? (
+                                            <div className="p-3 bg-gray-100 rounded-full text-gray-400"><LuLock className="w-6 h-6" /></div>
+                                        ) : (
+                                            <div className={`p-3 rounded-full transition-transform duration-300 ${expandedUnits.includes(unit.unit_id) ? 'bg-indigo-100 text-indigo-600 rotate-180' : 'bg-gray-50 text-gray-400'}`}>
+                                                <LuChevronDown className="w-6 h-6" />
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            )}
-                        </div>
-                    ))}
+                                {expandedUnits.includes(unit.unit_id) && !isLocked && (
+                                    <div className="bg-gray-50/30 border-t border-gray-100 p-6 space-y-4">
+                                        {unit.parts?.map((part) => (
+                                            <div key={part.part_id} className="bg-white p-4 rounded-2xl border border-gray-100 flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                                                <div className="flex items-center gap-4">
+                                                    <div className={`p-3 rounded-xl ${part.student_status === 'completed' ? 'bg-green-100 text-green-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                                                        {part.student_status === 'completed' ? <LuCheck /> : <LuBookOpen />}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-bold text-gray-900">{part.title}</h4>
+                                                        <div className="flex items-center gap-3 text-xs text-gray-500 uppercase font-bold tracking-wide mt-1">
+                                                            <span>{part.part_type}</span>
+                                                            <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
+                                                            <span>{part.duration_minutes} min</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <StudentButton
+                                                    size="sm"
+                                                    variant={part.student_status === 'completed' ? 'outline' : 'primary'}
+                                                    onClick={() => router.push(`/student/modules/learn/${part.part_id}`)}
+                                                >
+                                                    {part.student_status === 'completed' ? 'Review' : (part.student_status === 'in_progress' ? 'Continue' : 'Start')}
+                                                </StudentButton>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
                 </main>
             </div>
         </StudentRoute>

@@ -58,7 +58,7 @@ const getUserPermissions = (role) => {
       'access_all_features'
     ]
   };
-  
+
   return permissions[role] || [];
 };
 
@@ -98,7 +98,7 @@ const authenticate = async (req, res, next) => {
 
             // Attach user data to request
             req.user = {
-              userId: user._id, 
+              userId: user.user_id,
               username: user.username,
               role: user.role,
               schoolId: user.school_id,
@@ -110,7 +110,7 @@ const authenticate = async (req, res, next) => {
 
             // Add refreshed flag to response
             res.locals.tokenRefreshed = true;
-            
+
             // Allow request to proceed
             return next();
           }
@@ -119,8 +119,8 @@ const authenticate = async (req, res, next) => {
 
       // If refresh failed or wasn't applicable
       throw new AuthenticationError(
-        error?.type === 'TokenExpiredError' 
-          ? 'Your session has expired. Please log in again.' 
+        error?.type === 'TokenExpiredError'
+          ? 'Your session has expired. Please log in again.'
           : 'Invalid authentication token.'
       );
     }
@@ -176,10 +176,10 @@ const authorize = (...allowedRoles) => {
 
       // Check if user has required permissions for the route
       if (req.routePermissions) {
-        const hasPermission = req.routePermissions.some(perm => 
+        const hasPermission = req.routePermissions.some(perm =>
           req.user.permissions.includes(perm)
         );
-        
+
         if (!hasPermission) {
           throw new AuthorizationError('You do not have permission to perform this action');
         }
@@ -220,7 +220,7 @@ const requirePermission = (...permissions) => {
         throw new AuthenticationError('Authentication required');
       }
 
-      const hasPermission = permissions.some(perm => 
+      const hasPermission = permissions.some(perm =>
         req.user.permissions.includes(perm)
       );
 
