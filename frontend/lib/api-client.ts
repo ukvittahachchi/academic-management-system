@@ -78,6 +78,16 @@ import {
   ReportFilter
 } from './types/report';
 
+// Admin Types
+import {
+  AdminUser,
+  CreateUserInput,
+  UpdateUserInput,
+  UserListResponse,
+  AuditLogListResponse,
+  SystemSettings
+} from './types/admin';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 class ApiClient {
@@ -221,6 +231,69 @@ class ApiClient {
       default:
         throw new Error(`Unknown or missing user role: ${role}`);
     }
+  }
+
+  // ======================
+  // ADMIN MANAGEMENT
+  // ======================
+
+  async getUsers(page: number = 1, limit: number = 20, filters?: { role?: string, search?: string }): Promise<UserListResponse> {
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...filters
+    });
+    const response = await this.request<{ data: UserListResponse }>(`/users?${queryParams.toString()}`);
+    return response.data;
+  }
+
+  async getUser(userId: number): Promise<AdminUser> {
+    const response = await this.request<{ data: AdminUser }>(`/users/${userId}`);
+    return response.data;
+  }
+
+  async createUser(userData: CreateUserInput): Promise<AdminUser> {
+    const response = await this.request<{ data: AdminUser }>('/users', {
+      method: 'POST',
+      body: JSON.stringify(userData)
+    });
+    return response.data;
+  }
+
+  async updateUser(userId: number, updateData: UpdateUserInput): Promise<AdminUser> {
+    const response = await this.request<{ data: AdminUser }>(`/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updateData)
+    });
+    return response.data;
+  }
+
+  async deleteUser(userId: number): Promise<void> {
+    await this.request(`/users/${userId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  async getAuditLogs(page: number = 1, limit: number = 20): Promise<AuditLogListResponse> {
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString()
+    });
+    const response = await this.request<{ data: AuditLogListResponse }>(`/users/audit-logs?${queryParams.toString()}`);
+    return response.data;
+  }
+
+  async getSettings(): Promise<SystemSettings> {
+    const response = await this.request<{ data: SystemSettings }>('/settings');
+    return response.data;
+  }
+
+  async updateSettings(settings: Partial<SystemSettings>): Promise<SystemSettings> {
+    const response = await this.request<{ data: SystemSettings }>('/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings)
+    });
+    return response.data;
   }
 
   // --- Specific Dashboard Widgets (Student) ---

@@ -8,7 +8,7 @@ export default function AdminPage() {
         <h1 className="text-2xl font-bold mb-2">Admin Portal</h1>
         <p>Manage the entire system - users, modules, content, and settings.</p>
       </div>
-      
+
       {/* Dashboard Actions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
         {/* Manage Modules Card */}
@@ -21,17 +21,41 @@ export default function AdminPage() {
           <p className="text-gray-600">Create and organize learning modules</p>
         </Link>
 
-        {/* You can add more cards here in the future (e.g., Manage Users) */}
+        {/* Manage Users Card */}
+        <Link
+          href="/admin/users"
+          className="p-6 bg-white rounded-xl shadow hover:shadow-lg transition border border-blue-200 block"
+        >
+          <div className="text-4xl mb-4 text-blue-600">👥</div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">Manage Users</h3>
+          <p className="text-gray-600">Add, edit, or remove users and roles</p>
+        </Link>
+
+        {/* Audit Logs Card */}
+        <Link
+          href="/admin/audit-logs"
+          className="p-6 bg-white rounded-xl shadow hover:shadow-lg transition border border-amber-200 block"
+        >
+          <div className="text-4xl mb-4 text-amber-600">📋</div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">Audit Logs</h3>
+          <p className="text-gray-600">View system activity and security logs</p>
+        </Link>
+
+        {/* Settings Card */}
+        <Link
+          href="/admin/settings"
+          className="p-6 bg-white rounded-xl shadow hover:shadow-lg transition border border-gray-200 block"
+        >
+          <div className="text-4xl mb-4 text-gray-600">⚙️</div>
+          <h3 className="text-lg font-bold text-gray-800 mb-2">System Settings</h3>
+          <p className="text-gray-600">Configure global system preferences</p>
+        </Link>
       </div>
 
-      {/* Placeholder for future features */}
+      {/* Footer / Version Info */}
       <div className="text-center py-10 border-t border-gray-200">
-        <div className="text-4xl mb-4 grayscale opacity-50">👨‍💼</div>
-        <h2 className="text-lg font-semibold text-gray-500 mb-2">
-          More Admin Features Coming Soon
-        </h2>
         <p className="text-gray-400 text-sm">
-          User management and Analytics will be available in Week 5.
+          System version 1.1 - Advanced Admin Panel Enabled
         </p>
       </div>
     </div>

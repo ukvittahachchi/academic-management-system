@@ -290,6 +290,182 @@ class User {
       throw new AppError('Failed to get teachers', 500);
     }
   }
+
+  // ======================
+  // FIND ALL USERS (ADMIN)
+  // ======================
+  static async findAll({ page = 1, limit = 20, role, search, school_id }) {
+    try {
+      const offset = (page - 1) * limit;
+      const params = [];
+      let sql = `
+        SELECT 
+          user_id, school_id, username, full_name, role,
+          class_grade, roll_number, subject, is_active,
+          last_login, created_at
+        FROM users 
+        WHERE 1=1
+      `; // 1=1 allows appending AND clauses easily
+
+      if (school_id) {
+        sql += ` AND school_id = ?`;
+        params.push(school_id);
+      }
+
+      if (role) {
+        sql += ` AND role = ?`;
+        params.push(role);
+      }
+
+      if (search) {
+        sql += ` AND (username LIKE ? OR full_name LIKE ?)`;
+        params.push(`%${search}%`, `%${search}%`);
+      }
+
+      sql += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+      params.push(limit, offset);
+
+      const users = await database.query(sql, params);
+      return users;
+    } catch (error) {
+      console.error('Find All Users Error:', error);
+      throw new AppError('Failed to retrieve users', 500);
+    }
+  }
+
+  // ======================
+  // COUNT USERS (ADMIN)
+  // ======================
+  static async count({ role, search, school_id }) {
+    try {
+      const params = [];
+      let sql = `SELECT COUNT(*) as total FROM users WHERE 1=1`;
+
+      if (school_id) {
+        sql += ` AND school_id = ?`;
+        params.push(school_id);
+      }
+
+      if (role) {
+        sql += ` AND role = ?`;
+        params.push(role);
+      }
+
+      if (search) {
+        sql += ` AND (username LIKE ? OR full_name LIKE ?)`;
+        params.push(`%${search}%`, `%${search}%`);
+      }
+
+      const result = await database.query(sql, params);
+      return result[0].total;
+    } catch (error) {
+      console.error('Count Users Error:', error);
+      throw new AppError('Failed to count users', 500);
+    }
+  }
+
+  // ======================
+  // UPDATE USER (ADMIN)
+  // ======================
+  static async update(userId, updateData) {
+    try {
+      const allowedFields = [
+        'full_name', 'role', 'class_grade',
+        'roll_number', 'subject', 'is_active', 'password_hash'
+      ];
+
+      const updates = [];
+      const params = [];
+
+      // Handle password update separately if provided
+      if (updateData.password) {
+        const salt = await bcrypt.genSalt(10);
+        const hash = await bcrypt.hash(updateData.password, salt);
+        updates.push(`password_hash = ?`);
+        params.push(hash);
+      }
+
+      for (const [key, value] of Object.entries(updateData)) {
+        if (allowedFields.includes(key) && key !== 'password_hash') {
+          updates.push(`${key} = ?`);
+          params.push(value);
+        }
+      }
+
+      if (updates.length === 0) {
+        return false; // Nothing to update
+      }
+
+      updates.push(`updated_at = CURRENT_TIMESTAMP`);
+
+      const sql = `UPDATE users SET ${updates.join(', ')} WHERE user_id = ?`;
+      params.push(userId);
+
+      await database.query(sql, params);
+      return true;
+    } catch (error) {
+      console.error('Update User Error:', error);
+      throw new AppError('Failed to update user', 500);
+    }
+  }
+
+  // ======================
+  // DELETE USER (SOFT DELETE)
+  // ======================
+  static async delete(userId) {
+    try {
+      // Soft delete by setting is_active to false
+      const sql = `UPDATE users SET is_active = FALSE WHERE user_id = ?`;
+      await database.query(sql, [userId]);
+      return true;
+    } catch (error) {
+      console.error('Delete User Error:', error);
+      throw new AppError('Failed to delete user', 500);
+    }
+  }
+
+  // ======================
+  // GET AUDIT LOGS
+  // ======================
+  static async getAuditLogs({ page = 1, limit = 20, school_id }) {
+    try {
+      const offset = (page - 1) * limit;
+      let sql = `
+        SELECT 
+          l.log_id, l.user_id, l.activity_type, l.ip_address, 
+          l.user_agent, l.details, l.created_at,
+          u.username, u.full_name, u.role
+        FROM auth_activity_logs l
+        LEFT JOIN users u ON l.user_id = u.user_id
+        ORDER BY l.created_at DESC
+        LIMIT ? OFFSET ?
+      `;
+
+      // Note: currently auth_activity_logs doesn't have school_id directly, 
+      // but users do. If we needed to filter by school_id strictly, we'd add WHERE clause.
+      // For now, assuming single tenant or super admin view.
+
+      const logs = await database.query(sql, [limit, offset]);
+      return logs;
+    } catch (error) {
+      console.error('Get Audit Logs Error:', error);
+      throw new AppError('Failed to retrieve audit logs', 500);
+    }
+  }
+
+  // ======================
+  // COUNT AUDIT LOGS
+  // ======================
+  static async countAuditLogs() {
+    try {
+      const sql = `SELECT COUNT(*) as total FROM auth_activity_logs`;
+      const result = await database.query(sql);
+      return result[0].total;
+    } catch (error) {
+      console.error('Count Audit Logs Error:', error);
+      throw new AppError('Failed to count logs', 500);
+    }
+  }
 }
 
 module.exports = User;
