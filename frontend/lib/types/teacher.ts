@@ -1,3 +1,5 @@
+import { ReportData } from './report';
+
 export interface TeacherClass {
     assignment_id: number;
     teacher_id: number;
@@ -144,6 +146,7 @@ export interface TeacherDashboardData {
         completed_items: number;
         avg_score: number;
     }>;
+    recent_reports: ReportData[];
     class_list: TeacherClass[];
     performance_distribution: PerformanceDistribution[];
     activity_trends: ActivityTrend[];

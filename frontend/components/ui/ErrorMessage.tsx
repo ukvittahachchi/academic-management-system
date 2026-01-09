@@ -6,6 +6,7 @@ interface ErrorMessageProps {
   error: string | null;
   title?: string;
   onRetry?: () => void;
+  onClose?: () => void;
   showDetails?: boolean;
   className?: string;
 }
@@ -14,6 +15,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
   error,
   title = 'Something went wrong',
   onRetry,
+  onClose,
   showDetails = false,
   className = ''
 }) => {
@@ -37,7 +39,16 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
   const friendlyError = friendlyErrors[error] || error;
 
   return (
-    <div className={`bg-red-50 border border-red-200 rounded-xl p-6 ${className}`}>
+    <div className={`bg-red-50 border border-red-200 rounded-xl p-6 relative ${className}`}>
+      {onClose && (
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-red-500 hover:text-red-700"
+          aria-label="Close"
+        >
+          <span className="text-xl">×</span>
+        </button>
+      )}
       <div className="flex items-start">
         <div className="flex-shrink-0">
           <div className="bg-red-100 p-3 rounded-full">
@@ -51,7 +62,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
           <p className="text-red-700 mb-4">
             {friendlyError}
           </p>
-          
+
           <div className="flex space-x-3">
             {onRetry && (
               <button
@@ -61,7 +72,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
                 Try Again
               </button>
             )}
-            
+
             {showDetails && (
               <button
                 onClick={() => setShowMore(!showMore)}
@@ -70,7 +81,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
                 {showMore ? 'Hide Details' : 'Show Details'}
               </button>
             )}
-            
+
             <button
               onClick={() => window.location.reload()}
               className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-lg text-sm transition"
@@ -78,7 +89,7 @@ export const ErrorMessage: React.FC<ErrorMessageProps> = ({
               Refresh Page
             </button>
           </div>
-          
+
           {showMore && showDetails && (
             <div className="mt-4 pt-4 border-t border-red-200">
               <p className="text-sm text-red-600 font-mono bg-red-100 p-3 rounded">
@@ -113,7 +124,7 @@ export const SuccessMessage: React.FC<{
           <p className="text-green-700 mb-4">
             {message}
           </p>
-          
+
           {onDismiss && (
             <button
               onClick={onDismiss}

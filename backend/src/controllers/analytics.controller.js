@@ -342,7 +342,7 @@ class AnalyticsController {
         `;
 
         const db = require('../config/mysql');
-        const [rows] = await db.execute(query, [teacherId, studentId]);
+        const rows = await db.execute(query, [teacherId, studentId]);
 
         return rows.length > 0;
     }

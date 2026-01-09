@@ -161,14 +161,15 @@ const authenticate = async (req, res, next) => {
 // ROLE-BASED AUTHORIZATION
 // ======================
 const authorize = (...allowedRoles) => {
+  const roles = allowedRoles.flat();
   return (req, res, next) => {
     try {
       if (!req.user) {
         throw new AuthenticationError('Authentication required');
       }
 
-      if (!allowedRoles.includes(req.user.role)) {
-        const requiredRoles = allowedRoles.map(r => r.charAt(0).toUpperCase() + r.slice(1)).join(', ');
+      if (!roles.includes(req.user.role)) {
+        const requiredRoles = roles.map(r => r.charAt(0).toUpperCase() + r.slice(1)).join(', ');
         throw new AuthorizationError(
           `Access denied. This area is for ${requiredRoles} only.`
         );

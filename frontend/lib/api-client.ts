@@ -69,6 +69,15 @@ import {
   WeakAreaInput
 } from './types/analytics';
 
+// Report Types
+import {
+  ReportGenerationRequest,
+  ReportGenerationResponse,
+  ReportsListResponse,
+  ReportConfigResponse,
+  ReportFilter
+} from './types/report';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 class ApiClient {
@@ -112,7 +121,7 @@ class ApiClient {
         throw new Error(data.message || `HTTP ${response.status}`);
       }
 
-      return data; // Some APIs wrap data in { data: ... }, others return direct. Handled in methods below.
+      return data;
     } catch (error) {
       console.error('API Request Failed:', error);
       throw error;
@@ -746,6 +755,100 @@ class ApiClient {
     const response = await this.request<{ data: AnalyticsSummary }>(`/analytics/student/${studentId}/summary`);
     return response.data;
   }
+
+  // ======================
+  // REPORTS & EXPORTS
+  // ======================
+
+  async generateReport(data: ReportGenerationRequest): Promise<ReportGenerationResponse> {
+    return this.request<ReportGenerationResponse>('/reports/generate', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async getReports(page: number = 1, limit: number = 20): Promise<ReportsListResponse> {
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString()
+    });
+    return this.request<ReportsListResponse>(`/reports?${queryParams.toString()}`);
+  }
+
+  async getReportConfigurations(reportType?: string): Promise<ReportConfigResponse> {
+    const queryParams = reportType ? `?report_type=${reportType}` : '';
+    return this.request<ReportConfigResponse>(`/reports/configurations${queryParams}`);
+  }
+
+  async scheduleReport(data: any): Promise<any> {
+    return this.request('/reports/schedule', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async deleteReport(reportId: number): Promise<{ success: boolean; message: string }> {
+    return this.request(`/reports/${reportId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  /**
+   * Downloads a report file. 
+   * Uses native fetch directly instead of this.request() because it returns a Blob, not JSON.
+   */
+  async downloadReport(reportId: number): Promise<void> {
+    const url = `${API_BASE_URL}/reports/download/${reportId}`;
+
+    const defaultHeaders = {
+      'Content-Type': 'application/json',
+    };
+
+    const requestOptions: RequestInit = {
+      method: 'GET',
+      headers: {
+        ...defaultHeaders
+      },
+      credentials: 'include',
+    };
+
+    try {
+      const response = await fetch(url, requestOptions);
+
+      if (!response.ok) {
+        throw new Error(`Download failed: HTTP ${response.status}`);
+      }
+
+      const blob = await response.blob();
+
+      // Create download link
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+
+      // Extract filename from headers or use default
+      const contentDisposition = response.headers.get('content-disposition');
+      let filename = 'report.xlsx';
+
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename="?(.+)"?/);
+        if (filenameMatch && filenameMatch.length > 1) {
+          filename = filenameMatch[1];
+        }
+      }
+
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Report Download Failed:', error);
+      throw error;
+    }
+  }
 }
 
 export const apiClient = new ApiClient();
@@ -755,3 +858,4 @@ export const assignmentAPI = apiClient;
 export const dashboardAPI = apiClient;
 export const teacherAPI = apiClient;
 export const analyticsAPI = apiClient;
+export const reportsAPI = apiClient;

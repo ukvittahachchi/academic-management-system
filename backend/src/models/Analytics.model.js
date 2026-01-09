@@ -4,7 +4,7 @@ class AnalyticsModel {
     // Get comprehensive student analytics
     static async getStudentAnalytics(studentId, moduleId = null) {
         const query = 'CALL get_comprehensive_student_analytics(?, ?)';
-        const [results] = await db.execute(query, [studentId, moduleId]);
+        const results = await db.execute(query, [studentId, moduleId]);
         return {
             overall_summary: results[0][0] || {},
             weekly_trends: results[1] || [],
@@ -63,7 +63,7 @@ class AnalyticsModel {
 
         query += ' ORDER BY sp.completed_at DESC';
 
-        const [rows] = await db.execute(query, params);
+        const rows = await db.execute(query, params);
         return rows;
     }
 
@@ -106,7 +106,7 @@ class AnalyticsModel {
 
         query += ' ORDER BY apa.submitted_at DESC';
 
-        const [rows] = await db.execute(query, params);
+        const rows = await db.execute(query, params);
         return rows;
     }
 
@@ -140,7 +140,7 @@ class AnalyticsModel {
 
         query += ' ORDER BY tsa.session_date DESC, tsa.hour_of_day';
 
-        const [rows] = await db.execute(query, params);
+        const rows = await db.execute(query, params);
         return rows;
     }
 
@@ -184,7 +184,7 @@ class AnalyticsModel {
 
         query += ' ORDER BY wa.difficulty_score DESC, wa.occurrences DESC';
 
-        const [rows] = await db.execute(query, params);
+        const rows = await db.execute(query, params);
         return rows;
     }
 
@@ -210,7 +210,7 @@ class AnalyticsModel {
                 AND improvement_status != 'resolved'
         `;
 
-        const [existing] = await db.execute(checkQuery, [student_id, area_name, area_type]);
+        const existing = await db.execute(checkQuery, [student_id, area_name, area_type]);
 
         if (existing.length > 0) {
             // Update existing weak area
@@ -234,7 +234,7 @@ class AnalyticsModel {
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `;
 
-            const [result] = await db.execute(insertQuery, [
+            const result = await db.execute(insertQuery, [
                 student_id, module_id, unit_id, learning_part_id,
                 area_type, area_name, difficulty_score, notes
             ]);
@@ -275,7 +275,7 @@ class AnalyticsModel {
             params.push(moduleId);
         }
 
-        const [rows] = await db.execute(query, params);
+        const rows = await db.execute(query, params);
         return rows;
     }
 
@@ -300,7 +300,7 @@ class AnalyticsModel {
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         `;
 
-        const [result] = await db.execute(query, [
+        const result = await db.execute(query, [
             student_id, learning_part_id, start_time, end_time,
             duration_seconds, session_type, focus_score, distractions_noted
         ]);
@@ -330,7 +330,7 @@ class AnalyticsModel {
                 hour_of_day
         `;
 
-        const [rows] = await db.execute(query, [studentId, days]);
+        const rows = await db.execute(query, [studentId, days]);
         return rows;
     }
 
@@ -361,7 +361,7 @@ class AnalyticsModel {
 
         query += ' GROUP BY week_start ORDER BY week_start';
 
-        const [rows] = await db.execute(query, params);
+        const rows = await db.execute(query, params);
         return rows;
     }
 
@@ -398,7 +398,7 @@ class AnalyticsModel {
 
         query += ' GROUP BY lp.part_type ORDER BY avg_score DESC';
 
-        const [rows] = await db.execute(query, params);
+        const rows = await db.execute(query, params);
         return rows;
     }
 
@@ -484,7 +484,7 @@ class AnalyticsModel {
             GROUP BY u.user_id
         `;
 
-        const [rows] = await db.execute(query, [studentId]);
+        const rows = await db.execute(query, [studentId]);
         return rows[0] || {};
     }
 }

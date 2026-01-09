@@ -13,6 +13,7 @@ const assignmentRoutes = require('./routes/assignment.routes');
 const dashboardRoutes = require('./routes/dashboard.routes');
 const teacherRoutes = require('./routes/teacher.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
+const reportRoutes = require('./routes/report.routes');
 
 // Load environment variables
 require('dotenv').config();
@@ -230,6 +231,7 @@ app.use('/api/assignments', assignmentRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/teacher', teacherRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/reports', reportRoutes);
 
 // ======================
 // 404 NOT FOUND HANDLER

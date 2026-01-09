@@ -1,4 +1,5 @@
 const TeacherModel = require('../models/Teacher.model');
+const ReportModel = require('../models/Report.model');
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/errors');
 
@@ -51,13 +52,15 @@ class TeacherController {
                 performanceDistribution,
                 activityTrends,
                 topPerformers,
-                studentsNeedingAttention
+                studentsNeedingAttention,
+                recentReports
             ] = await Promise.all([
                 TeacherModel.getTeacherClasses(teacherId),
                 TeacherModel.getPerformanceDistribution(teacherId),
                 TeacherModel.getActivityTrends(teacherId, 7),
                 TeacherModel.getTopPerformers(teacherId, 5),
-                TeacherModel.getStudentsNeedingAttention(teacherId, 5)
+                TeacherModel.getStudentsNeedingAttention(teacherId, 5),
+                ReportModel.getReports(req.user.schoolId, teacherId, 'teacher', 5, 0)
             ]);
 
             // Cast model results
@@ -100,7 +103,8 @@ class TeacherController {
                 performance_distribution: performanceDistribution,
                 activity_trends: activityTrends,
                 top_performers: topPerformers,
-                students_needing_attention: studentsNeedingAttention
+                students_needing_attention: studentsNeedingAttention,
+                recent_reports: recentReports
             };
 
             res.json({
