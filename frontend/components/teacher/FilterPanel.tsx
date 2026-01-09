@@ -157,7 +157,7 @@ export default function FilterPanel({
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                         Student Status
                     </label>
-                    <div className="flex space-x-4">
+                    <div className="flex flex-wrap gap-2">
                         {[
                             { value: 'all', label: 'All', color: 'bg-gray-100' },
                             { value: 'active', label: 'Active', color: 'bg-green-100' },
