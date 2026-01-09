@@ -238,12 +238,15 @@ class ApiClient {
   // ======================
 
   async getUsers(page: number = 1, limit: number = 20, filters?: { role?: string, search?: string }): Promise<UserListResponse> {
-    const queryParams = new URLSearchParams({
+    const params = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
-      ...filters
     });
-    const response = await this.request<{ data: UserListResponse }>(`/users?${queryParams.toString()}`);
+
+    if (filters?.role) params.append('role', filters.role);
+    if (filters?.search) params.append('search', filters.search);
+
+    const response = await this.request<{ data: UserListResponse }>(`/users?${params.toString()}`);
     return response.data;
   }
 

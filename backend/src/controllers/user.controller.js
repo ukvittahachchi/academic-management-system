@@ -7,20 +7,20 @@ const database = require('../config/mysql');
 const mapUser = (u) => {
     if (!u) return null;
     return {
-        userId: u.user_id,
-        schoolId: u.school_id,
+        user_id: u.user_id,
+        school_id: u.school_id,
         username: u.username,
-        fullName: u.full_name,
+        full_name: u.full_name,
         role: u.role,
-        classGrade: u.class_grade,
-        rollNumber: u.roll_number,
+        class_grade: u.class_grade,
+        roll_number: u.roll_number,
         subject: u.subject,
-        isActive: u.is_active === 1 || u.is_active === true,
-        lastLogin: u.last_login,
-        createdAt: u.created_at,
-        profilePictureUrl: u.profile_picture_url,
-        dateOfBirth: u.date_of_birth,
-        parentContact: u.parent_contact
+        is_active: u.is_active === 1 || u.is_active === true,
+        last_login: u.last_login,
+        created_at: u.created_at,
+        profile_picture_url: u.profile_picture_url,
+        date_of_birth: u.date_of_birth,
+        parent_contact: u.parent_contact
     };
 };
 
