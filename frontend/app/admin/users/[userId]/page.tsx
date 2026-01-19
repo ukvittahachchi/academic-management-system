@@ -129,14 +129,25 @@ export default function EditUserPage({ params }: { params: Promise<{ userId: str
                     </div>
 
                     <div className="border-t pt-4 mt-4">
-                        <h3 className="text-sm font-semibold text-gray-500 mb-2">Change Password (Optional)</h3>
-                        <input
-                            type="password"
-                            name="password"
-                            onChange={handleChange}
-                            className="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                            placeholder="Enter new password to change"
-                        />
+                        <h3 className="text-sm font-semibold text-gray-500 mb-2">Change Password</h3>
+                        {user.must_change_password === false ? (
+                            <div className="p-3 bg-yellow-50 text-yellow-800 text-sm rounded-lg">
+                                Password cannot be changed by admin because this user has already logged in and set their own password.
+                                <br />
+                                The user must reset it themselves if forgotten.
+                            </div>
+                        ) : (
+                            <>
+                                <p className="text-xs text-gray-500 mb-2">Optional. Use this to set an initial password or reset for a user who has never logged in.</p>
+                                <input
+                                    type="password"
+                                    name="password"
+                                    onChange={handleChange}
+                                    className="w-full border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                                    placeholder="Enter new password to reset"
+                                />
+                            </>
+                        )}
                     </div>
 
                     {/* Conditional Fields based on Role */}

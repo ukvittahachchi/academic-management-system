@@ -25,7 +25,8 @@ class JWTService {
         role: user.role,
         schoolId: user.school_id,
         classGrade: user.class_grade || null,
-        subject: user.subject || null
+        subject: user.subject || null,
+        mustChangePassword: !!user.must_change_password
       };
 
       return jwt.sign(payload, this.accessTokenSecret, {
@@ -81,7 +82,7 @@ class JWTService {
       };
     } catch (error) {
       console.error('Verify Token Error:', error.name, error.message);
-      
+
       let message = 'Invalid token';
       if (error.name === 'TokenExpiredError') {
         message = 'Token has expired';
@@ -134,7 +135,7 @@ class JWTService {
   getTokenFromHeader(req) {
     try {
       const authHeader = req.headers.authorization;
-      
+
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return null;
       }
@@ -168,7 +169,8 @@ class JWTService {
           role: user.role,
           schoolId: user.school_id,
           classGrade: user.class_grade,
-          subject: user.subject
+          subject: user.subject,
+          mustChangePassword: !!user.must_change_password
         }
       };
     } catch (error) {

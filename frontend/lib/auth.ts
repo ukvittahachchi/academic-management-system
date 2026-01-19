@@ -10,6 +10,7 @@ export interface User {
   classGrade?: string;
   subject?: string;
   permissions: string[];
+  mustChangePassword?: boolean;
 }
 
 export interface AuthState {

@@ -13,6 +13,7 @@ class User {
       full_name,
       role,
       class_grade = null,
+      section = null,
       roll_number = null,
       subject = null,
       plain_password
@@ -33,16 +34,26 @@ class User {
     const salt = await bcrypt.genSalt(10);
     const password_hash = await bcrypt.hash(plain_password, salt);
 
+    // Default must_change_password to true for new users created by admin
+    const must_change_password = true;
+
     const sql = `
       INSERT INTO users (
         school_id, username, full_name, role, 
-        class_grade, roll_number, subject, password_hash
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        class_grade, section, roll_number, subject, password_hash,
+        must_change_password
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
+
+    let formattedGrade = class_grade;
+    if (class_grade && /^\d+$/.test(class_grade.toString())) {
+      formattedGrade = `Grade ${class_grade}`;
+    }
 
     const params = [
       school_id, username, full_name, role,
-      class_grade, roll_number, subject, password_hash
+      formattedGrade, section, roll_number, subject, password_hash,
+      must_change_password
     ];
 
     try {
@@ -60,11 +71,12 @@ class User {
   static async findById(userId) {
     try {
       const sql = `
-        SELECT 
+        SELECT
           user_id, school_id, username, full_name, role,
-          class_grade, roll_number, subject, is_active,
+          class_grade, section, roll_number, subject, is_active,
           last_login, created_at, updated_at,
-          profile_picture_url, date_of_birth, parent_contact
+          profile_picture_url, date_of_birth, parent_contact,
+          must_change_password
         FROM users 
         WHERE user_id = ?
       `;
@@ -82,11 +94,11 @@ class User {
   static async findByUsername(username) {
     try {
       const sql = `
-        SELECT 
+        SELECT
           user_id, school_id, username, full_name, role,
-          class_grade, roll_number, subject, is_active,
+          class_grade, section, roll_number, subject, is_active,
           password_hash, login_attempts, account_locked_until,
-          last_login, created_at
+          last_login, created_at, must_change_password
         FROM users 
         WHERE username = ?
       `;
@@ -196,7 +208,8 @@ class User {
             password_reset_expires = NULL,
             login_attempts = 0,
             account_locked_until = NULL,
-            updated_at = CURRENT_TIMESTAMP
+            updated_at = CURRENT_TIMESTAMP,
+            must_change_password = FALSE
         WHERE user_id = ?
       `;
 
@@ -301,7 +314,7 @@ class User {
       let sql = `
         SELECT 
           user_id, school_id, username, full_name, role,
-          class_grade, roll_number, subject, is_active,
+          class_grade, section, roll_number, subject, is_active,
           last_login, created_at
         FROM users 
         WHERE 1=1
@@ -370,7 +383,7 @@ class User {
   static async update(userId, updateData) {
     try {
       const allowedFields = [
-        'full_name', 'role', 'class_grade',
+        'full_name', 'role', 'class_grade', 'section',
         'roll_number', 'subject', 'is_active', 'password_hash'
       ];
 
@@ -383,12 +396,21 @@ class User {
         const hash = await bcrypt.hash(updateData.password, salt);
         updates.push(`password_hash = ?`);
         params.push(hash);
+        // If admin updates password, user must change it again
+        updates.push(`must_change_password = ?`);
+        params.push(true);
       }
 
       for (const [key, value] of Object.entries(updateData)) {
         if (allowedFields.includes(key) && key !== 'password_hash') {
+          let finalValue = value;
+          // Normalize class_grade if it is being updated
+          if (key === 'class_grade' && value && /^\d+$/.test(value.toString())) {
+            finalValue = `Grade ${value}`;
+          }
+
           updates.push(`${key} = ?`);
-          params.push(value);
+          params.push(finalValue);
         }
       }
 
@@ -412,10 +434,13 @@ class User {
   // ======================
   // DELETE USER (SOFT DELETE)
   // ======================
+  // ======================
+  // DELETE USER (HARD DELETE)
+  // ======================
   static async delete(userId) {
     try {
-      // Soft delete by setting is_active to false
-      const sql = `UPDATE users SET is_active = FALSE WHERE user_id = ?`;
+      // Hard delete
+      const sql = `DELETE FROM users WHERE user_id = ?`;
       await database.query(sql, [userId]);
       return true;
     } catch (error) {

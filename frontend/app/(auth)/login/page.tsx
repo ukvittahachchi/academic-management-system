@@ -10,17 +10,17 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+
   // Added local error state to handle validation and specific API errors
-  const [error, setError] = useState(''); 
-  
+  const [error, setError] = useState('');
+
   const { login } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(''); // Clear previous errors
-    
+
     // Validate locally first
     if (!username.trim() || !password.trim()) {
       setError('Please enter both username and password');
@@ -28,7 +28,7 @@ export default function LoginPage() {
     }
 
     setIsSubmitting(true);
-    
+
     try {
       await login(username, password);
       // Navigation happens in auth context
@@ -38,6 +38,11 @@ export default function LoginPage() {
         setError(error.message);
       } else if (error.message?.includes('inactive')) {
         setError(error.message);
+      } else if (error.message?.includes('Password change required')) {
+        setError('Please change your password to activate your account.');
+        // Optional: Redirect automatically
+        router.push(`/change-password?username=${encodeURIComponent(username)}`);
+        return;
       } else {
         setError('Login failed. Please check your credentials and try again.');
       }
@@ -212,7 +217,12 @@ export default function LoginPage() {
                 Contact your school administrator
               </span>
             </p>
-            <div className="mt-4">
+            <div className="mt-4 space-y-2">
+              <div>
+                <Link href="/change-password" className="text-sm font-medium text-indigo-600 hover:text-indigo-800 border-b border-indigo-200 pb-0.5">
+                  First time logging in? Change Password
+                </Link>
+              </div>
               <Link href="/" className="text-blue-600 hover:text-blue-800 text-sm font-medium">
                 ← Back to Home
               </Link>

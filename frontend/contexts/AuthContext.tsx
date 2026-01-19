@@ -40,10 +40,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     console.log('[AuthContext] authState:', authState);
   }, [authState]);
-  
+
   const router = useRouter();
   const pathname = usePathname();
-  
+
   // Ref to track if a login action just occurred to prevent redundant checks
   const justLoggedIn = useRef(false);
 
@@ -73,6 +73,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => clearInterval(refreshInterval);
   }, [authState.isAuthenticated]);
 
+  // Enforce password change
+  useEffect(() => {
+    if (authState.isAuthenticated && authState.user?.mustChangePassword) {
+      if (pathname !== '/change-password') {
+        // Create a slight delay or just push to ensure state propagation
+        router.push('/change-password');
+      }
+    }
+  }, [authState.isAuthenticated, authState.user, pathname, router]);
+
   const checkAuth = async () => {
     console.log('[AuthContext] checkAuth called');
     try {
@@ -81,9 +91,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (!authState.isAuthenticated) {
         setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
       }
-      
+
       const response = await apiClient.checkAuth();
-      
+
       if (response.authenticated && response.user) {
         setAuthState({
           user: response.user,
@@ -115,13 +125,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('[AuthContext] login called');
     try {
       setAuthState(prev => ({ ...prev, isLoading: true, error: null }));
-      
+
       const response = await apiClient.login({ username, password });
-      
+
       if (response.success) {
         // Get user data after successful login
         const userResponse = await apiClient.getCurrentUser();
-        
+
         // Set flag to prevent useEffect from re-checking immediately
         justLoggedIn.current = true;
 
@@ -131,7 +141,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           isLoading: false,
           error: null,
         });
-        
+
+
+        if (userResponse.data.mustChangePassword) {
+          router.push('/change-password');
+          return;
+        }
+
         // Redirect based on role
         switch (userResponse.data.role) {
           case 'student':

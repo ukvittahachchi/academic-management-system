@@ -11,6 +11,7 @@ export interface AdminUser {
     full_name: string;
     role: 'student' | 'teacher' | 'admin';
     is_active: boolean;
+    must_change_password?: boolean;
     last_login?: string;
     created_at: string;
     class_grade?: string;

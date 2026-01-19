@@ -36,8 +36,20 @@ export default function UsersPage() { // Renamed from UsersManagementPage to Use
         fetchUsers();
     }, [page, search, roleFilter]);
 
+    const handleStatusToggle = async (user: AdminUser) => {
+        try {
+            const newStatus = !user.is_active;
+            // Optimistically update local state
+            setUsers(users.map(u => u.user_id === user.user_id ? { ...u, is_active: newStatus } : u));
+            await apiClient.updateUser(user.user_id, { is_active: newStatus });
+        } catch (err: any) {
+            alert(err.message || 'Failed to update user status');
+            fetchUsers(); // Revert on error
+        }
+    };
+
     const handleDelete = async (userId: number) => {
-        if (!confirm('Are you sure you want to delete this user?')) return;
+        if (!confirm('Are you sure you want to PERMANENTLY delete this user? This action cannot be undone.')) return;
         try {
             await apiClient.deleteUser(userId);
             fetchUsers(); // Refresh list
@@ -128,12 +140,21 @@ export default function UsersPage() { // Renamed from UsersManagementPage to Use
                                             )}
                                         </td>
                                         <td className="p-4">
-                                            <span className={`inline-block w-2 h-2 rounded-full mr-2 
-                        ${user.is_active ? 'bg-green-500' : 'bg-red-500'}
-                      `}></span>
-                                            <span className="text-sm text-gray-600">
-                                                {user.is_active ? 'Active' : 'Inactive'}
-                                            </span>
+                                            <div className="flex items-center">
+                                                <button
+                                                    onClick={() => handleStatusToggle(user)}
+                                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${user.is_active ? 'bg-green-500' : 'bg-gray-300'
+                                                        }`}
+                                                >
+                                                    <span
+                                                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${user.is_active ? 'translate-x-6' : 'translate-x-1'
+                                                            }`}
+                                                    />
+                                                </button>
+                                                <span className="ml-2 text-sm text-gray-600">
+                                                    {user.is_active ? 'Active' : 'Inactive'}
+                                                </span>
+                                            </div>
                                         </td>
                                         <td className="p-4 text-right space-x-2">
                                             <Link

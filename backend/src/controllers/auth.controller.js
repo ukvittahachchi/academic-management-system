@@ -121,6 +121,20 @@ class AuthController {
   });
 
   // ======================
+  // CHANGE PASSWORD (PUBLIC)
+  // ======================
+  changePasswordPublic = asyncHandler(async (req, res) => {
+    const { username, currentPassword, newPassword } = req.body;
+
+    const result = await authService.changePasswordPublic(username, currentPassword, newPassword);
+
+    res.status(200).json({
+      success: true,
+      message: result.message
+    });
+  });
+
+  // ======================
   // CHECK AUTH STATUS
   // ======================
   checkAuth = asyncHandler(async (req, res) => {

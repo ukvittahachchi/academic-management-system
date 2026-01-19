@@ -1,0 +1,10 @@
+👥 Users:
+ - [1] admin001 (null)
+ - [2] teacher_ict01 (null)
+ - [3] test_student (Grade 6)
+ - [4] stu_6_001 (Grade 6)
+ - [5] stu_6_002 (Grade 6)
+ - [6] stu_6_003 (Grade 6)
+ - [7] test_teacher (null)
+ - [8] test_admin (null)
+ - [15] umindu1 (Grade 6)

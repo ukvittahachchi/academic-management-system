@@ -27,6 +27,11 @@ router.post('/refresh', authController.refreshToken);
 // @access  Public (returns auth status)
 router.get('/check', tryAuthenticate, authController.checkAuth);
 
+// @route   POST /api/auth/change-password-public
+// @desc    Change password (public access for forced change)
+// @access  Public
+router.post('/change-password-public', authController.changePasswordPublic);
+
 // ======================
 // PROTECTED ROUTES
 // ======================

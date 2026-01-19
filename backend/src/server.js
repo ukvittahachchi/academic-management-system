@@ -15,7 +15,9 @@ const teacherRoutes = require('./routes/teacher.routes');
 const analyticsRoutes = require('./routes/analytics.routes');
 const reportRoutes = require('./routes/report.routes');
 const userRoutes = require('./routes/user.routes');
+
 const settingsRoutes = require('./routes/settings.routes');
+const uploadRoutes = require('./routes/upload.routes');
 
 // Load environment variables
 require('dotenv').config();
@@ -130,6 +132,9 @@ if (process.env.NODE_ENV === 'development') {
 // ======================
 // STATIC FILES
 // ======================
+// ======================
+// STATIC FILES
+// ======================
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // ======================
@@ -235,7 +240,9 @@ app.use('/api/teacher', teacherRoutes);
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/users', userRoutes);
+
 app.use('/api/settings', settingsRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // ======================
 // 404 NOT FOUND HANDLER
@@ -281,7 +288,7 @@ const startServer = async () => {
       console.log('🎓 ACADEMIC MANAGEMENT SYSTEM BACKEND');
       console.log('='.repeat(60));
       console.log(`✅ Server running on: http://localhost:${PORT}`);
-      console.log(`📊 Environment: ${process.env.NODE_ENV}`);
+      console.log(`📊 Environment: ${process.env.NODE_ENV}`); // Server restarted
       console.log(`📚 Health Check: http://localhost:${PORT}/api/health`);
       console.log(`🎯 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:3000'}`);
       console.log(`🍪 Cookie Parser: Enabled`);

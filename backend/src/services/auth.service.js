@@ -40,8 +40,16 @@ class AuthService {
         );
       }
 
-      // 3. Find user
+      // 3. Find user and check if password change is required
       const user = await User.findByUsername(username);
+
+      if (user && user.must_change_password) {
+        // Security: verify password before telling them to change it?
+        // Yes, otherwise anyone can DOS a user by claiming they need to change password.
+        // But we do that inside the change password flow.
+        // Here, we just check credentials first.
+      }
+
       if (!user) {
         await User.updateLoginAttempts(username, false);
         await User.logAuthActivity(null, 'login_failed', ipAddress, userAgent, {
@@ -85,6 +93,12 @@ class AuthService {
       }
 
       // 6. Successful login
+
+      // BLOCK LOGIN IF PASSWORD CHANGE IS REQUIRED
+      if (user.must_change_password) {
+        throw new AuthenticationError('Password change required', 403); // Use specific error/code
+      }
+
       await User.updateLoginAttempts(username, true);
       await User.logAuthActivity(user.user_id, 'login', ipAddress, userAgent, {
         role: user.role,
@@ -214,6 +228,45 @@ class AuthService {
         throw error;
       }
       throw new AppError('Failed to get user data', 500);
+    }
+  }
+
+  // ======================
+  // CHANGE PASSWORD (PUBLIC - FOR FORCED CHANGE)
+  // ======================
+  async changePasswordPublic(username, currentPassword, newPassword) {
+    try {
+      if (!username || !currentPassword || !newPassword) {
+        throw new AppError('All fields are required', 400);
+      }
+
+      const user = await User.findByUsername(username);
+      if (!user) {
+        throw new AuthenticationError('User not found');
+      }
+
+      const bcrypt = require('bcryptjs');
+      const isPasswordValid = await bcrypt.compare(currentPassword, user.password_hash);
+      if (!isPasswordValid) {
+        throw new AuthenticationError('Current password is incorrect');
+      }
+
+      // 2. Update Password and Reset Flag directly
+      // We can reuse User.updatePassword but we need to ensure must_change_password becomes false.
+      // The User.updatePassword method I modified earlier sets must_change_password = FALSE.
+      // So this is safe.
+
+      await User.updatePassword(user.user_id, newPassword);
+
+      return {
+        success: true,
+        message: 'Password changed successfully. You can now login.'
+      };
+
+    } catch (error) {
+      console.error('Public Change Password Error:', error);
+      if (error instanceof AppError) throw error;
+      throw new AppError('Failed to change password', 500);
     }
   }
 

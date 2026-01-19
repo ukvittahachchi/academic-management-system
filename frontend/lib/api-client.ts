@@ -183,6 +183,16 @@ class ApiClient {
     });
   }
 
+  async changePasswordPublic(username: string, currentPassword: string, newPassword: string): Promise<{
+    success: boolean;
+    message: string
+  }> {
+    return this.request('/auth/change-password-public', {
+      method: 'POST',
+      body: JSON.stringify({ username, currentPassword, newPassword }),
+    });
+  }
+
   async getRoleInfo(): Promise<{
     success: boolean;
     data: { role: string; roleInfo: any; permissions: string[] }
@@ -924,6 +934,77 @@ class ApiClient {
       console.error('Report Download Failed:', error);
       throw error;
     }
+  }
+  // ======================
+  // FILE UPLOAD
+  // ======================
+
+  async uploadFile(file: File): Promise<{
+    success: boolean;
+    message: string;
+    file: {
+      filename: string;
+      originalName: string;
+      mimetype: string;
+      size: number;
+      path: string;
+      url: string;
+    }
+  }> {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const url = `${API_BASE_URL}/upload/single`;
+
+    // We use raw fetch here because this.request assumes JSON body, but we need FormData
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+      credentials: 'include' // Important for auth cookies
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || `Upload failed with status ${response.status}`);
+    }
+    return data;
+  }
+
+  async uploadMultipleFiles(files: File[]): Promise<{
+    success: boolean;
+    message: string;
+    files: Array<{
+      filename: string;
+      originalName: string;
+      mimetype: string;
+      size: number;
+      path: string;
+      url: string;
+    }>
+  }> {
+    const formData = new FormData();
+    files.forEach(file => formData.append('files', file));
+
+    const url = `${API_BASE_URL}/upload/multiple`;
+
+    // We use raw fetch here because this.request assumes JSON body, but we need FormData
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+      credentials: 'include'
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.message || `Upload failed with status ${response.status}`);
+    }
+    return data;
+  }
+
+  async deleteFile(filename: string): Promise<{ success: boolean; message: string }> {
+    return this.request(`/upload/${filename}`, {
+      method: 'DELETE'
+    });
   }
 }
 

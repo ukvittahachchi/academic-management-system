@@ -20,7 +20,8 @@ const mapUser = (u) => {
         created_at: u.created_at,
         profile_picture_url: u.profile_picture_url,
         date_of_birth: u.date_of_birth,
-        parent_contact: u.parent_contact
+        parent_contact: u.parent_contact,
+        must_change_password: u.must_change_password === 1 || u.must_change_password === true
     };
 };
 
@@ -134,6 +135,11 @@ class UserController {
         const existingUser = await User.findById(userId);
         if (!existingUser || existingUser.school_id !== req.user.schoolId) {
             throw new AppError('User not found', 404);
+        }
+
+        // Prevent password changes if user has already set their own (must_change_password is false)
+        if (updateData.password && !existingUser.must_change_password) {
+            throw new AppError('Cannot change password for users who have already confirmed their account. Ask the user to reset it themselves.', 403);
         }
 
         await User.update(userId, updateData);
