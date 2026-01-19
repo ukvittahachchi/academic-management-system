@@ -630,6 +630,42 @@ class ApiClient {
   // CONTENT MANAGEMENT
   // ======================
 
+  async getUnitsByModule(moduleId: number): Promise<{ success: boolean; data: Unit[] }> {
+    // Re-using the navigation endpoint or a specific admin endpoint if available
+    // For now, let's use the hierarchy one as it contains units, or assume /modules/:id/units exists
+    // Based on Unit.controller.js backend: router.get('/:moduleId/units', ...) is likely in navigation routes or module routes?
+    // Actually, let's check backend routes. 
+    // User has `Unit.model.findByModule`, accessed via `navigation.controller.getModuleHierarchy` ok.
+    // But Admin might need a simpler list.
+    // Let's assume we use getModuleHierarchy for now, or add a specific one.
+    // Actually, looking at `module.routes.js` it doesn't seem to have /units. 
+    // `navigation.routes.js` has /modules/:moduleId/hierarchy.
+    // Let's try to use hierarchy, but ideally we'd have a direct fetching endpoint.
+    // IMPORTANT: I will add a direct endpoint fetching helper assuming it exists or relies on hierarchy.
+    return this.request(`/navigation/modules/${moduleId}/hierarchy`);
+  }
+
+  async reorderUnits(moduleId: number, unitOrders: { unit_id: string; unit_order: number }[]): Promise<void> {
+    await this.request('/content/units/reorder', {
+      method: 'POST',
+      body: JSON.stringify({ moduleId, unitOrders })
+    });
+  }
+
+  async updatePartContent(partId: string, data: any): Promise<void> {
+    await this.request(`/content/parts/${partId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    });
+  }
+
+  async createAssignment(assignment: any, questions: any[]): Promise<void> {
+    await this.request('/content/assignments/create', {
+      method: 'POST',
+      body: JSON.stringify({ assignment, questions })
+    });
+  }
+
   async getContentDetails(partId: number): Promise<ContentResponse> {
     const response = await this.request<{ data: ContentResponse }>(`/content/${partId}`);
     return response.data;

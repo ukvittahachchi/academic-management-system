@@ -16,6 +16,60 @@ class AssignmentModel {
         return rows[0] || null;
     }
 
+    // Create Assignment with Questions (Transaction)
+    static async createAssignmentWithQuestions(assignmentData, questionsData) {
+        // Access pool directly for transaction support
+        if (!db.pool) await db.connect();
+        const connection = await db.pool.getConnection();
+
+        try {
+            await connection.beginTransaction();
+
+            // 1. Create Assignment
+            const {
+                part_id, title, description,
+                total_marks, passing_marks, time_limit_minutes, max_attempts
+            } = assignmentData;
+
+            const [assignResult] = await connection.execute(
+                `INSERT INTO assignments (
+                    part_id, title, description,
+                    total_marks, passing_marks, time_limit_minutes, max_attempts, is_active
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, TRUE)`,
+                [part_id, title, description, total_marks, passing_marks, time_limit_minutes, max_attempts]
+            );
+
+            const assignmentId = assignResult.insertId;
+
+            // 2. Create Questions
+            for (const q of questionsData) {
+                await connection.execute(
+                    `INSERT INTO questions (
+                        assignment_id, question_text, question_type,
+                        option_a, option_b, option_c, option_d, option_e,
+                        correct_answers, marks, explanation,
+                        difficulty_level, question_order, is_active
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
+                    [
+                        assignmentId, q.question_text, q.question_type || 'single',
+                        q.option_a, q.option_b, q.option_c, q.option_d, q.option_e,
+                        q.correct_answers, q.marks || 1, q.explanation,
+                        q.difficulty_level || 'medium', q.question_order
+                    ]
+                );
+            }
+
+            await connection.commit();
+            return { assignment_id: assignmentId, success: true };
+
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
+
     // Get assignment by assignment_id
     static async getAssignmentById(assignmentId) {
         const query = `

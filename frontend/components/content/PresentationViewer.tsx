@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ContentMetadata } from '@/lib/types/content';
 import dynamic from 'next/dynamic';
+import { getFullFileUrl } from '@/lib/utils';
 
 const PDFWrapper = dynamic(() => import('./PDFWrapper'), {
     ssr: false,
@@ -259,7 +260,7 @@ export default function PresentationViewer({ content, onTimeUpdate, onComplete }
                                 <div className="max-w-4xl w-full">
                                     <div className="max-w-4xl w-full">
                                         <PDFWrapper
-                                            file={content.content_url}
+                                            file={getFullFileUrl(content.content_url)}
                                             onLoadSuccess={onDocumentLoadSuccess}
                                             onLoadError={onDocumentLoadError}
                                             pageNumber={currentPage}
@@ -297,7 +298,7 @@ export default function PresentationViewer({ content, onTimeUpdate, onComplete }
                                         )}
 
                                         <iframe
-                                            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(content.content_url || '')}`}
+                                            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(getFullFileUrl(content.content_url) || '')}`}
                                             width="100%"
                                             height="100%"
                                             frameBorder="0"
@@ -323,7 +324,7 @@ export default function PresentationViewer({ content, onTimeUpdate, onComplete }
                                             <span>Download File</span>
                                         </button>
                                         <a
-                                            href={content.content_url}
+                                            href={getFullFileUrl(content.content_url)}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm flex items-center space-x-2"

@@ -32,10 +32,11 @@ class LearningPart {
     // Get next order if not provided
     let order = display_order;
     if (!order) {
-      const [maxOrder] = await database.query(
+      const result = await database.query(
         'SELECT COALESCE(MAX(display_order), 0) + 1 as next_order FROM learning_parts WHERE unit_id = ?',
         [unit_id]
       );
+      const maxOrder = (Array.isArray(result) && Array.isArray(result[0])) ? result[0] : result;
       order = maxOrder[0].next_order;
     }
 
@@ -54,8 +55,16 @@ class LearningPart {
     ];
 
     try {
-      const [result] = await database.query(sql, params);
-      return this.findById(result.insertId);
+      const result = await database.query(sql, params);
+
+      let insertId;
+      if (Array.isArray(result) && Array.isArray(result[0])) {
+        insertId = result[0]?.insertId || result.insertId;
+      } else {
+        insertId = result.insertId;
+      }
+
+      return this.findById(insertId);
     } catch (error) {
       console.error('Create Learning Part Error:', error);
 
@@ -117,7 +126,8 @@ class LearningPart {
       }
 
       const params = studentId ? [studentId, partId] : [partId];
-      const [parts] = await database.query(sql, params);
+      const result = await database.query(sql, params);
+      const parts = (Array.isArray(result) && Array.isArray(result[0])) ? result[0] : result;
 
       if (parts.length === 0) {
         throw new NotFoundError('Learning part');
@@ -126,7 +136,7 @@ class LearningPart {
       const part = parts[0];
 
       // Get next part in sequence
-      const [nextParts] = await database.query(`
+      const nextResult = await database.query(`
         SELECT part_id, title, part_type
         FROM learning_parts 
         WHERE unit_id = ? AND display_order > ?
@@ -134,10 +144,11 @@ class LearningPart {
         LIMIT 1
       `, [part.unit_id, part.display_order]);
 
+      const nextParts = (Array.isArray(nextResult) && Array.isArray(nextResult[0])) ? nextResult[0] : nextResult;
       part.next_part = nextParts[0] || null;
 
       // Get previous part
-      const [prevParts] = await database.query(`
+      const prevResult = await database.query(`
         SELECT part_id, title, part_type
         FROM learning_parts 
         WHERE unit_id = ? AND display_order < ?
@@ -145,6 +156,7 @@ class LearningPart {
         LIMIT 1
       `, [part.unit_id, part.display_order]);
 
+      const prevParts = (Array.isArray(prevResult) && Array.isArray(prevResult[0])) ? prevResult[0] : prevResult;
       part.previous_part = prevParts[0] || null;
 
       return part;
@@ -280,7 +292,8 @@ class LearningPart {
         WHERE sp.part_id = ? AND sp.student_id = ?
       `;
 
-      const [progress] = await database.query(sql, [partId, studentId]);
+      const result = await database.query(sql, [partId, studentId]);
+      const progress = (Array.isArray(result) && Array.isArray(result[0])) ? result[0] : result;
       return progress[0] || null;
     } catch (error) {
       console.error('Get Student Progress Error:', error);
@@ -357,10 +370,11 @@ class LearningPart {
       }
 
       // Check if there are student progress records
-      const [progress] = await database.query(
+      const result = await database.query(
         'SELECT COUNT(*) as progress_count FROM student_progress WHERE part_id = ?',
         [partId]
       );
+      const progress = (Array.isArray(result) && Array.isArray(result[0])) ? result[0] : result;
 
       if (progress[0].progress_count > 0) {
         throw new AppError('Cannot delete learning part that has student progress records', 400);
@@ -477,7 +491,8 @@ class LearningPart {
         LIMIT 1
       `;
 
-      const [nextParts] = await database.query(sql, [studentId, moduleId]);
+      const result = await database.query(sql, [studentId, moduleId]);
+      const nextParts = (Array.isArray(result) && Array.isArray(result[0])) ? result[0] : result;
       return nextParts[0] || null;
     } catch (error) {
       console.error('Get Next Part For Student Error:', error);

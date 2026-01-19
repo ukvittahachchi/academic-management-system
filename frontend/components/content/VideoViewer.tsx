@@ -1,11 +1,10 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import dynamic from 'next/dynamic';
-const ReactPlayer = dynamic(() => import('react-player'), { ssr: false }) as any;
 import { ContentMetadata } from '@/lib/types/content';
 import { apiClient } from '@/lib/api-client';
 import StudentButton from '@/components/ui/StudentButton';
+import { getFullFileUrl } from '@/lib/utils';
 
 interface VideoViewerProps {
     content: ContentMetadata;
@@ -22,8 +21,37 @@ export default function VideoViewer({ content, onTimeUpdate, onComplete }: Video
     const [duration, setDuration] = useState<number>(0);
     const [error, setError] = useState<string | null>(null);
 
-    const playerRef = useRef<any>(null);
+    const playerRef = useRef<HTMLVideoElement>(null);
     const timerRef = useRef<any>(null);
+
+    // Sync volume and playback rate
+    useEffect(() => {
+        if (playerRef.current) {
+            playerRef.current.volume = volume;
+        }
+    }, [volume]);
+
+    useEffect(() => {
+        if (playerRef.current) {
+            playerRef.current.playbackRate = playbackRate;
+        }
+    }, [playbackRate]);
+
+    // Handle play/pause via state if needed, or rely on controls. 
+    // Since we have custom controls logic in other places (maybe), we should keep state in sync?
+    // Actually, we rely on native controls mostly, but the state `isPlaying` tracks it.
+    // If we wanted to force play/pause from state:
+    /*
+    useEffect(() => {
+        if (playerRef.current) {
+            if (isPlaying && playerRef.current.paused) playerRef.current.play();
+            if (!isPlaying && !playerRef.current.paused) playerRef.current.pause();
+        }
+    }, [isPlaying]);
+    */
+    // But since we use native `controls`, let's just let the video drive the state via events.
+
+    // Track real time spent watching
 
     // Track real time spent watching
     useEffect(() => {
@@ -79,14 +107,7 @@ export default function VideoViewer({ content, onTimeUpdate, onComplete }: Video
         }
     };
 
-    const playerConfig: any = {
-        file: {
-            attributes: {
-                controlsList: 'nodownload',
-                disablePictureInPicture: false
-            }
-        }
-    };
+
 
     return (
         <div className="flex flex-col h-full bg-surface-50 rounded-3xl overflow-hidden shadow-soft border border-gray-100">
@@ -160,27 +181,37 @@ export default function VideoViewer({ content, onTimeUpdate, onComplete }: Video
                         )}
                     </div>
                 ) : (
-                    <div className="w-full h-full">
-                        <ReactPlayer
+                    <div className="w-full h-full flex items-center justify-center">
+                        <video
                             ref={playerRef}
-                            url={content.content_url}
-                            width="100%"
-                            height="100%"
-                            controls={true}
-                            playing={isPlaying}
-                            volume={volume}
-                            playbackRate={playbackRate}
-                            onReady={handleReady}
-                            onStart={() => setIsPlaying(true)}
+                            src={getFullFileUrl(content.content_url)}
+                            className="w-full h-full max-h-full"
+                            controls
+                            playsInline
+                            onCanPlay={handleReady}
                             onPlay={() => setIsPlaying(true)}
                             onPause={() => setIsPlaying(false)}
                             onEnded={handleEnded}
-                            onError={handleError}
-                            onDuration={setDuration}
-                            progressInterval={1000}
-                            config={playerConfig}
+                            onError={(e) => {
+                                const mediaError = e.currentTarget.error;
+                                console.error('Video Error Details:', {
+                                    code: mediaError?.code,
+                                    message: mediaError?.message,
+                                    src: e.currentTarget.src,
+                                    networkState: e.currentTarget.networkState,
+                                    readyState: e.currentTarget.readyState
+                                });
+                                handleError(mediaError);
+                            }}
+                            onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+                            onTimeUpdate={(e) => {
+                                // Optional: Update internal state or granular tracking if needed
+                                // Main tracking is done via useEffect interval
+                            }}
                             style={{ backgroundColor: 'black' }}
-                        />
+                        >
+                            Your browser does not support the video tag.
+                        </video>
                     </div>
                 )}
             </div>

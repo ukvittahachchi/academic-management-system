@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { ContentMetadata } from '@/lib/types/content';
 import dynamic from 'next/dynamic';
 import StudentButton from '@/components/ui/StudentButton';
+import { getFullFileUrl } from '@/lib/utils';
 
 const PDFWrapper = dynamic(() => import('./PDFWrapper'), {
     ssr: false,
@@ -196,7 +197,7 @@ export default function PDFViewer({ content, onTimeUpdate, onComplete }: PDFView
                 <div className={`transition-all duration-500 ${isLoading ? 'opacity-0 scale-95' : 'opacity-100 scale-100'}`}>
                     <div className="shadow-soft rounded-xl overflow-hidden">
                         <PDFWrapper
-                            file={content.content_url}
+                            file={getFullFileUrl(content.content_url)}
                             onLoadSuccess={onDocumentLoadSuccess}
                             onLoadError={onDocumentLoadError}
                             pageNumber={currentPage}

@@ -4,11 +4,42 @@ const contentController = require('../controllers/content.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const validationMiddleware = require('../middlewares/validation.middleware');
 
+const adminContentController = require('../controllers/admin.content.controller');
+const { adminOnly } = require('../middlewares/auth.middleware');
+
 // All routes require authentication
 router.use(authMiddleware.authenticate);
 
+// ======================
+// ADMIN ROUTES
+// ======================
+
+// Reorder units
+router.post('/units/reorder',
+    adminOnly,
+    adminContentController.reorderUnits
+);
+
+// Create Assignment (Transaction)
+router.post('/assignments/create',
+    adminOnly,
+    adminContentController.createAssignment
+);
+
+// Update Learning Part
+router.put('/parts/:partId',
+    adminOnly,
+    adminContentController.updateLearningPart
+);
+
+// Delete Question
+router.delete('/questions/:questionId',
+    adminOnly,
+    adminContentController.deleteQuestion
+);
+
 // Get content details
-router.get('/:partId', 
+router.get('/:partId',
     validationMiddleware.validateParam('partId'),
     contentController.getContentDetails
 );
