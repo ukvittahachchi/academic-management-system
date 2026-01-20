@@ -5,10 +5,8 @@ const nextConfig: NextConfig = {
     // Transpile is required for these packages in Next.js 15/16
     transpilePackages: ['react-pdf'],
 
-    experimental: {
-        // This helps handle the ESM imports correctly
-        esmExternals: "loose",
-    },
+    // Silences the warning about multiple lockfiles by setting the project root explicitly
+    outputFileTracingRoot: path.join(__dirname, '../'),
 
     webpack: (config) => {
         // Critical: prevents server-side crash requiring 'canvas'
