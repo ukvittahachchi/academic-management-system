@@ -143,6 +143,7 @@ export default function ClientAdminDashboard() {
                             color="indigo"
                             onClick={() => router.push('/admin/settings')}
                         />
+
                     </div>
 
                     {/* Dashboard Views */}

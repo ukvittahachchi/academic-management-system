@@ -10,7 +10,8 @@ import {
     LuUsers,
     LuShieldAlert,
     LuSettings,
-    LuLogOut
+    LuLogOut,
+    LuUser
 } from "react-icons/lu";
 
 export default function AdminSidebar() {
@@ -33,6 +34,7 @@ export default function AdminSidebar() {
         { icon: <LuBookOpen />, label: 'Modules', href: '/admin/modules' },
         { icon: <LuShieldAlert />, label: 'Audit Logs', href: '/admin/audit-logs' },
         { icon: <LuSettings />, label: 'Settings', href: '/admin/settings' },
+        { icon: <LuUser />, label: 'Profile', href: '/admin/profile' },
     ];
 
     return (
