@@ -6,6 +6,7 @@ import { ContentMetadata } from '@/lib/types/content';
 import { assignmentAPI } from '@/lib/api-client';
 import {
     StartAttemptResponse,
+    AssignmentDetailsResponse,
     Question,
     StudentAnswer,
     SubmissionResponse
@@ -23,6 +24,7 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
     const [view, setView] = useState<'details' | 'attempt' | 'results'>('details');
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+    const [detailsData, setDetailsData] = useState<AssignmentDetailsResponse | null>(null);
     const [assignmentData, setAssignmentData] = useState<StartAttemptResponse | null>(null);
     const [submissionResult, setSubmissionResult] = useState<SubmissionResponse | null>(null);
     const [answers, setAnswers] = useState<StudentAnswer>({});
@@ -46,6 +48,7 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
         try {
             setLoading(true);
             const data = await assignmentAPI.getAssignmentDetails(content.part_id);
+            setDetailsData(data);
 
             if (data.canAttempt.hasActiveAttempt) {
                 // Resume existing attempt
@@ -215,17 +218,17 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
     };
 
     const renderDetailsView = () => {
-        if (!assignmentData) return null;
+        if (!detailsData) return null;
 
         return (
             <div className="max-w-4xl mx-auto">
                 <div className="bg-white rounded-lg shadow-lg p-8">
                     <div className="text-center mb-8">
                         <h1 className="text-3xl font-bold text-gray-900 mb-4">
-                            {assignmentData.assignment.title}
+                            {detailsData.assignment.title}
                         </h1>
                         <p className="text-gray-600 text-lg">
-                            {assignmentData.assignment.description}
+                            {detailsData.assignment.description}
                         </p>
                     </div>
 
@@ -235,23 +238,23 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
                             <ul className="space-y-2">
                                 <li className="flex justify-between">
                                     <span className="text-gray-600">Questions:</span>
-                                    <span className="font-medium">{assignmentData.assignment.question_count}</span>
+                                    <span className="font-medium">{detailsData.assignment.question_count}</span>
                                 </li>
                                 <li className="flex justify-between">
                                     <span className="text-gray-600">Total Marks:</span>
-                                    <span className="font-medium">{assignmentData.assignment.total_marks}</span>
+                                    <span className="font-medium">{detailsData.assignment.total_marks}</span>
                                 </li>
                                 <li className="flex justify-between">
                                     <span className="text-gray-600">Passing Marks:</span>
-                                    <span className="font-medium">{assignmentData.assignment.passing_marks}</span>
+                                    <span className="font-medium">{detailsData.assignment.passing_marks}</span>
                                 </li>
                                 <li className="flex justify-between">
                                     <span className="text-gray-600">Time Limit:</span>
-                                    <span className="font-medium">{assignmentData.assignment.time_limit_minutes} minutes</span>
+                                    <span className="font-medium">{detailsData.assignment.time_limit_minutes} minutes</span>
                                 </li>
                                 <li className="flex justify-between">
                                     <span className="text-gray-600">Attempts Allowed:</span>
-                                    <span className="font-medium">{assignmentData.assignment.max_attempts}</span>
+                                    <span className="font-medium">{detailsData.assignment.max_attempts}</span>
                                 </li>
                             </ul>
                         </div>
@@ -291,7 +294,7 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
                             Start Assignment
                         </button>
                         <p className="text-gray-500 text-sm mt-4">
-                            You have {assignmentData.assignment.max_attempts} attempts remaining
+                            You have {detailsData.assignment.max_attempts - (detailsData.canAttempt.attemptsUsed || 0)} attempts remaining
                         </p>
                     </div>
                 </div>

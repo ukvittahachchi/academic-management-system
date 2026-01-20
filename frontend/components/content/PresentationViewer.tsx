@@ -280,39 +280,54 @@ export default function PresentationViewer({ content, onTimeUpdate, onComplete }
                                 content.content_url?.toLowerCase()?.endsWith('.ppt') ||
                                 content.content_url?.toLowerCase()?.endsWith('.pptx')) ? (
                                 <div className="w-full h-full flex flex-col items-center">
-                                    {/* Localhost Warning */}
-                                    {typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') && (
-                                        <div className="bg-yellow-900/50 border border-yellow-600 text-yellow-200 px-4 py-2 rounded-lg mb-4 text-sm max-w-2xl flex items-center justify-between">
-                                            <span>
-                                                ⚠️ <strong>Development Note:</strong> The standard Office Viewer requires a public URL. This preview may not load on localhost unless you are using a tunnel (e.g., ngrok).
-                                            </span>
-                                        </div>
-                                    )}
-
                                     <div className="w-full h-full bg-white rounded-lg shadow-lg overflow-hidden relative">
-                                        {/* Loading Fallback */}
-                                        {isLoading && (
+                                        {/* Loading Fallback - Only show if NOT on localhost (because localhost shows static msg immediately) */}
+                                        {isLoading && !(typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) && (
                                             <div className="absolute inset-0 flex items-center justify-center bg-gray-900 z-10">
                                                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
                                             </div>
                                         )}
 
-                                        <iframe
-                                            src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(getFullFileUrl(content.content_url) || '')}`}
-                                            width="100%"
-                                            height="100%"
-                                            frameBorder="0"
-                                            onLoad={() => {
-                                                setIsLoading(false);
-                                                setNumPages(1); // PowerPoint viewer doesn't report pages easily back to us
-                                            }}
-                                            onError={() => {
-                                                console.error("Failed to load iframe");
-                                                setIsLoading(false);
-                                                setError("Failed to load presentation viewer.");
-                                            }}
-                                            className="w-full h-full"
-                                        />
+                                        {typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? (
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-800 text-center p-8">
+                                                <div className="text-6xl mb-4">⚠️</div>
+                                                <h3 className="text-xl font-semibold mb-2">Preview Unavailable Locally</h3>
+                                                <p className="text-gray-400 mb-6 max-w-md">
+                                                    Microsoft Office Viewer requires a public URL to render documents. It cannot access files on your localhost.
+                                                </p>
+                                                <div className="bg-blue-900/30 border border-blue-800 rounded-lg p-4 mb-6 text-sm text-left max-w-md">
+                                                    <p className="font-semibold mb-1">To test this feature:</p>
+                                                    <ol className="list-decimal list-inside space-y-1 text-gray-300">
+                                                        <li>Deploy your application to a public server</li>
+                                                        <li>Or use a tunnel tool like <strong>ngrok</strong></li>
+                                                    </ol>
+                                                </div>
+                                                <button
+                                                    onClick={handleDownload}
+                                                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium flex items-center space-x-2 transition-colors"
+                                                >
+                                                    <span>📥</span>
+                                                    <span>Download Presentation</span>
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <iframe
+                                                src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(getFullFileUrl(content.content_url) || '')}`}
+                                                width="100%"
+                                                height="100%"
+                                                frameBorder="0"
+                                                onLoad={() => {
+                                                    setIsLoading(false);
+                                                    setNumPages(1); // PowerPoint viewer doesn't report pages easily back to us
+                                                }}
+                                                onError={() => {
+                                                    console.error("Failed to load iframe");
+                                                    setIsLoading(false);
+                                                    setError("Failed to load presentation viewer.");
+                                                }}
+                                                className="w-full h-full"
+                                            />
+                                        )}
                                     </div>
 
                                     <div className="mt-4 flex space-x-4">

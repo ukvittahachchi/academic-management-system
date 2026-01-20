@@ -1,5 +1,5 @@
 import React, { useState, useRef, ChangeEvent } from 'react';
-import { Upload, X, File, FileText, Image as ImageIcon, Film } from 'lucide-react';
+import { LuUpload, LuX, LuFile, LuFileText, LuImage, LuVideo } from 'react-icons/lu';
 
 interface FileUploadProps {
     onUploadComplete: (files: UploadedFile[]) => void;
@@ -134,16 +134,16 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
     const getFileIcon = (filename: string) => {
         const ext = filename.split('.').pop()?.toLowerCase();
-        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) return <ImageIcon className="w-6 h-6 text-blue-500" />;
-        if (['pdf'].includes(ext || '')) return <FileText className="w-6 h-6 text-red-500" />;
-        if (['mp4', 'mov', 'avi'].includes(ext || '')) return <Film className="w-6 h-6 text-purple-500" />;
-        return <File className="w-6 h-6 text-gray-500" />;
+        if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) return <LuImage className="w-6 h-6 text-blue-500" />;
+        if (['pdf'].includes(ext || '')) return <LuFileText className="w-6 h-6 text-red-500" />;
+        if (['mp4', 'mov', 'avi'].includes(ext || '')) return <LuVideo className="w-6 h-6 text-purple-500" />;
+        return <LuFile className="w-6 h-6 text-gray-500" />;
     };
 
     return (
         <div className="w-full">
             <div
-                className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragging ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-primary'
+                className={`border-2 border-dashed rounded-[1.5rem] p-8 text-center cursor-pointer transition-all duration-300 ${isDragging ? 'border-purple-500 bg-purple-50 scale-[1.02]' : 'border-gray-200 hover:border-purple-400 hover:bg-gray-50'
                     }`}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -159,27 +159,31 @@ const FileUpload: React.FC<FileUploadProps> = ({
                     onChange={handleFileSelect}
                 />
 
-                <div className="flex flex-col items-center justify-center space-y-2">
-                    <Upload className="w-10 h-10 text-gray-400" />
-                    <div className="text-sm font-medium text-gray-700">
-                        Click to upload or drag and drop
+                <div className="flex flex-col items-center justify-center space-y-3">
+                    <div className={`p-4 rounded-full ${isDragging ? 'bg-purple-200' : 'bg-gray-100'} transition-colors`}>
+                        <LuUpload className={`w-8 h-8 ${isDragging ? 'text-purple-700' : 'text-gray-400'}`} />
                     </div>
-                    <div className="text-xs text-gray-500">
-                        {accept === '*' ? 'All files accepted' : accept} (Max {maxSizeMB}MB)
+                    <div>
+                        <p className="text-base font-bold text-gray-700">
+                            Click to upload or drag and drop
+                        </p>
+                        <p className="text-sm font-medium text-gray-400 mt-1">
+                            {accept === '*' ? 'All files accepted' : accept} (Max {maxSizeMB}MB)
+                        </p>
                     </div>
                 </div>
             </div>
 
             {/* Progress Bar */}
             {isUploading && (
-                <div className="mt-4 space-y-2">
-                    <div className="flex justify-between text-xs text-gray-500">
+                <div className="mt-6 space-y-2 animate-[fade-in_0.3s_ease-out]">
+                    <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-wider">
                         <span>Uploading...</span>
                         <span>{Math.round(uploadProgress)}%</span>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
                         <div
-                            className="bg-primary h-2 rounded-full transition-all duration-300"
+                            className="bg-purple-600 h-2 rounded-full transition-all duration-300 shadow-[0_0_10px_rgba(147,51,234,0.5)]"
                             style={{ width: `${uploadProgress}%` }}
                         ></div>
                     </div>
@@ -188,8 +192,8 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
             {/* Error Message */}
             {error && (
-                <div className="mt-4 p-3 bg-red-50 text-red-600 text-sm rounded-md flex items-center">
-                    <X className="w-4 h-4 mr-2" />
+                <div className="mt-4 p-4 bg-red-50 text-red-600 text-sm font-bold rounded-xl flex items-center shadow-sm border border-red-100 animate-[shake_0.5s_ease-in-out]">
+                    <LuX className="w-5 h-5 mr-3 flex-shrink-0" />
                     {error}
                 </div>
             )}

@@ -369,17 +369,34 @@ class LearningPart {
         throw new NotFoundError('Learning part');
       }
 
-      // Check if there are student progress records
-      const result = await database.query(
-        'SELECT COUNT(*) as progress_count FROM student_progress WHERE part_id = ?',
-        [partId]
-      );
-      const progress = (Array.isArray(result) && Array.isArray(result[0])) ? result[0] : result;
+      // 1. Delete associated student progress and logs
+      await database.query('DELETE FROM student_progress WHERE part_id = ?', [partId]);
+      await database.query('DELETE FROM content_access_logs WHERE part_id = ?', [partId]);
+      await database.query('DELETE FROM content_metadata WHERE part_id = ?', [partId]);
 
-      if (progress[0].progress_count > 0) {
-        throw new AppError('Cannot delete learning part that has student progress records', 400);
+      // 2. Check and delete associated assignment if it exists
+      // We start by checking if there is an assignment linked to this part
+      const assignQuery = 'SELECT assignment_id FROM assignments WHERE part_id = ?';
+      const assignResult = await database.query(assignQuery, [partId]);
+
+      // Handle the result format which depends on the mysql wrapper
+      let assignments = [];
+      if (Array.isArray(assignResult) && Array.isArray(assignResult[0])) {
+        // Wrapper returns [rows, fields]
+        assignments = assignResult[0];
+      } else if (Array.isArray(assignResult)) {
+        // Wrapper returns rows directly
+        assignments = assignResult;
       }
 
+      if (assignments.length > 0) {
+        const AssignmentModel = require('./Assignment.model');
+        for (const assignment of assignments) {
+          await AssignmentModel.deleteAssignment(assignment.assignment_id);
+        }
+      }
+
+      // 3. Delete the learning part
       const sql = 'DELETE FROM learning_parts WHERE part_id = ?';
       await database.query(sql, [partId]);
 

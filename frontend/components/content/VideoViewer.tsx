@@ -161,16 +161,24 @@ export default function VideoViewer({ content, onTimeUpdate, onComplete }: Video
             {/* Video Player Container */}
             <div className="flex-1 relative bg-black flex items-center justify-center overflow-hidden">
                 {!isReady && !error && (
-                    <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50 backdrop-blur-sm">
+                    <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/50 backdrop-blur-sm pointer-events-none">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-brand-500"></div>
                     </div>
                 )}
 
                 {error ? (
-                    <div className="text-center p-8 text-white">
+                    <div className="text-center p-8 text-white max-w-2xl">
                         <div className="text-red-500 text-6xl mb-4">⚠️</div>
                         <p className="text-2xl font-bold mb-2">Video Error</p>
                         <p className="text-gray-400 mb-6">{error}</p>
+
+                        {/* Debug Info */}
+                        <div className="text-left bg-gray-900/50 p-4 rounded-lg mb-6 text-xs text-mono text-gray-400 font-mono overflow-auto max-h-40">
+                            <p><strong>Debug Details:</strong></p>
+                            <p>Src: {getFullFileUrl(content.content_url)}</p>
+                            <p>Type: {content.content_type || 'N/A'}</p>
+                        </div>
+
                         {content.is_downloadable && (
                             <StudentButton
                                 onClick={handleDownload}
@@ -185,25 +193,42 @@ export default function VideoViewer({ content, onTimeUpdate, onComplete }: Video
                         <video
                             ref={playerRef}
                             src={getFullFileUrl(content.content_url)}
+                            poster={content.thumbnail_url ? getFullFileUrl(content.thumbnail_url) : undefined}
                             className="w-full h-full max-h-full"
                             controls
                             playsInline
+                            preload="auto"
+                            crossOrigin="anonymous"
                             onCanPlay={handleReady}
                             onPlay={() => setIsPlaying(true)}
                             onPause={() => setIsPlaying(false)}
                             onEnded={handleEnded}
                             onError={(e) => {
                                 const mediaError = e.currentTarget.error;
-                                console.error('Video Error Details:', {
-                                    code: mediaError?.code,
-                                    message: mediaError?.message,
-                                    src: e.currentTarget.src,
-                                    networkState: e.currentTarget.networkState,
-                                    readyState: e.currentTarget.readyState
-                                });
-                                handleError(mediaError);
+                                const networkState = e.currentTarget.networkState;
+                                const readyState = e.currentTarget.readyState;
+
+                                let errorMsg = 'Unknown error';
+                                if (mediaError) {
+                                    switch (mediaError.code) {
+                                        case 1: errorMsg = 'AbortedByUser'; break;
+                                        case 2: errorMsg = 'NetworkError'; break;
+                                        case 3: errorMsg = 'DecodeError'; break;
+                                        case 4: errorMsg = 'SourceNotSupported'; break;
+                                        default: errorMsg = `Code ${mediaError.code}`;
+                                    }
+                                }
+
+                                const debugMsg = `Error: ${errorMsg} (${mediaError?.message || ''})`;
+                                console.error('Video Error:', { code: mediaError?.code, message: mediaError?.message, src: e.currentTarget.src });
+
+                                setError(`${debugMsg}. Network: ${networkState}, Ready: ${readyState}`);
+                                setIsReady(true);
                             }}
-                            onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+                            onLoadedMetadata={(e) => {
+                                setDuration(e.currentTarget.duration);
+                                setIsReady(true);
+                            }}
                             onTimeUpdate={(e) => {
                                 // Optional: Update internal state or granular tracking if needed
                                 // Main tracking is done via useEffect interval

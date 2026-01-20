@@ -652,10 +652,50 @@ class ApiClient {
     });
   }
 
+  async createLearningPart(partData: any): Promise<{ success: boolean; data: any }> {
+    return this.request('/content/parts', {
+      method: 'POST',
+      body: JSON.stringify(partData)
+    });
+  }
+
+  async deleteLearningPart(partId: string): Promise<void> {
+    await this.request(`/content/parts/${partId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  async createUnit(unitData: any): Promise<{ success: boolean; data: Unit }> {
+    return this.request('/content/units/create', {
+      method: 'POST',
+      body: JSON.stringify(unitData)
+    });
+  }
+
+  async updateUnit(unitId: string, unitData: any): Promise<{ success: boolean; data: Unit }> {
+    return this.request(`/content/units/${unitId}`, {
+      method: 'PUT',
+      body: JSON.stringify(unitData)
+    });
+  }
+
+  async deleteUnit(unitId: string): Promise<void> {
+    await this.request(`/content/units/${unitId}`, {
+      method: 'DELETE'
+    });
+  }
+
   async updatePartContent(partId: string, data: any): Promise<void> {
     await this.request(`/content/parts/${partId}`, {
       method: 'PUT',
       body: JSON.stringify(data)
+    });
+  }
+
+  async createLearningPart(partData: any): Promise<{ success: boolean; data: any }> {
+    return this.request('/content/parts', {
+      method: 'POST',
+      body: JSON.stringify(partData)
     });
   }
 
@@ -664,6 +704,22 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ assignment, questions })
     });
+  }
+
+  async deleteAssignment(partId: string): Promise<void> {
+    await this.request(`/content/assignments/${partId}`, {
+      method: 'DELETE'
+    });
+  }
+
+  async getAssignmentByPart(partId: string): Promise<{
+    assignment: any;
+    questions: any[];
+  } | null> {
+    const response = await this.request<{ data: { assignment: any; questions: any[] } | null }>(
+      `/content/assignments/${partId}`
+    );
+    return response.data;
   }
 
   async getContentDetails(partId: number): Promise<ContentResponse> {

@@ -2,10 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { LuArrowLeft, LuPlus, LuBookOpen, LuLayoutList, LuFileText, LuX, LuSave } from 'react-icons/lu';
 import { apiClient } from '@/lib/api-client';
 import AdminUnitList from '@/components/admin/content/AdminUnitList';
-import UnitContentEditor from '@/components/admin/content/UnitContentEditor';
 import { AdminRoute } from '@/components/auth/ProtectedRoute';
 import { CardSkeleton } from '@/components/ui/LoadingSpinner';
 
@@ -17,7 +16,12 @@ export default function ModuleUnitsPage() {
     const [loading, setLoading] = useState(true);
     const [units, setUnits] = useState<any[]>([]);
     const [moduleInfo, setModuleInfo] = useState<any>(null);
-    const [selectedUnitId, setSelectedUnitId] = useState<string | null>(null);
+
+    // Add Unit State
+    const [showAddUnit, setShowAddUnit] = useState(false);
+    const [newUnitName, setNewUnitName] = useState('');
+    const [newUnitDescription, setNewUnitDescription] = useState('');
+    const [editingUnit, setEditingUnit] = useState<any>(null);
 
     useEffect(() => {
         if (moduleId) {
@@ -28,7 +32,6 @@ export default function ModuleUnitsPage() {
     const fetchData = async () => {
         try {
             setLoading(true);
-            // We use getModuleHierarchy to get units and their parts
             const response = await apiClient.getModuleHierarchy(moduleId!);
             if (response.success && response.data) {
                 setUnits(response.data.units || []);
@@ -39,6 +42,56 @@ export default function ModuleUnitsPage() {
             alert('Failed to load module units');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleEditUnit = (unitId: string) => {
+        const unit = units.find(u => u.unit_id === unitId);
+        if (unit) {
+            setEditingUnit(unit);
+            setNewUnitName(unit.unit_name);
+            setNewUnitDescription(unit.description || '');
+            setShowAddUnit(true);
+        }
+    };
+
+    const handleDeleteUnit = async (unitId: string) => {
+        if (!confirm('Are you sure you want to delete this unit? All content must be removed first.')) return;
+
+        try {
+            await apiClient.deleteUnit(unitId);
+            fetchData();
+        } catch (error: any) {
+            console.error('Failed to delete unit:', error);
+            alert(error.message || 'Failed to delete unit');
+        }
+    };
+
+    const handleSaveUnit = async () => {
+        if (!newUnitName.trim()) return;
+
+        try {
+            if (editingUnit) {
+                await apiClient.updateUnit(editingUnit.unit_id, {
+                    unit_name: newUnitName,
+                    description: newUnitDescription
+                });
+            } else {
+                await apiClient.createUnit({
+                    module_id: moduleId,
+                    unit_name: newUnitName,
+                    description: newUnitDescription,
+                    learning_objectives: ''
+                });
+            }
+            setNewUnitName('');
+            setNewUnitDescription('');
+            setEditingUnit(null);
+            setShowAddUnit(false);
+            fetchData();
+        } catch (error) {
+            console.error('Failed to save unit:', error);
+            alert('Failed to save unit');
         }
     };
 
@@ -57,86 +110,127 @@ export default function ModuleUnitsPage() {
         }
     };
 
-    const handleUpdatePart = async (partId: string, data: any) => {
-        await apiClient.updatePartContent(partId, data);
-        fetchData(); // Refresh to show updates
+    const handleManageUnit = (unitId: string) => {
+        router.push(`/admin/modules/${moduleId}/units/${unitId}`);
     };
-
-    const handleCreateAssignment = async (partId: string, assignmentData: any, questions: any[]) => {
-        await apiClient.createAssignment({ ...assignmentData, part_id: partId }, questions);
-        fetchData();
-    };
-
-    const selectedUnit = units.find(u => u.unit_id === selectedUnitId);
 
     if (!moduleId) return <div>Invalid Module ID</div>;
 
     return (
         <AdminRoute>
-            <div className="min-h-screen bg-gray-50 pb-10">
-                {/* Header */}
-                <header className="bg-white shadow">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                        <div className="flex items-center">
-                            <button
-                                onClick={() => router.back()}
-                                className="mr-4 p-2 hover:bg-gray-100 rounded-full transition"
-                            >
-                                <ArrowLeft className="w-5 h-5 text-gray-600" />
-                            </button>
-                            <div>
-                                <h1 className="text-2xl font-bold text-gray-900">
-                                    {moduleInfo?.module_name || 'Loading...'}
-                                </h1>
-                                <p className="text-sm text-gray-500">Manage Units & Content</p>
+            <div className="min-h-screen bg-gray-50/50 pb-20">
+                {/* Header Section */}
+                <div className="bg-white border-b border-gray-200 sticky top-0 z-10 glass-effect">
+                    <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                            <div className="flex items-center gap-4">
+                                <button
+                                    onClick={() => router.back()}
+                                    className="p-3 hover:bg-gray-100 rounded-xl transition-colors text-gray-500 hover:text-gray-900"
+                                >
+                                    <LuArrowLeft className="w-6 h-6" />
+                                </button>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+                                        <span className="bg-purple-100 text-purple-600 p-2 rounded-lg">
+                                            <LuBookOpen className="w-6 h-6" />
+                                        </span>
+                                        {moduleInfo?.module_name || 'Loading...'}
+                                    </h1>
+                                    <p className="text-gray-500 text-sm mt-1 flex items-center gap-2">
+                                        <span className="bg-gray-100 px-2 py-0.5 rounded text-xs font-bold text-gray-600">
+                                            {moduleInfo?.grade_level || 'Grade ...'}
+                                        </span>
+                                        Unit Management
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </header>
+                </div>
 
-                <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <main className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
                     {loading ? (
-                        <CardSkeleton />
+                        <div className="space-y-4">
+                            <CardSkeleton />
+                            <CardSkeleton />
+                        </div>
                     ) : (
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            {/* Left Column: Unit List */}
-                            <div className="lg:col-span-1 space-y-4">
-                                <div className="flex justify-between items-center mb-2">
-                                    <h2 className="text-lg font-semibold text-gray-700">Units</h2>
-                                    {/* Placeholder for Add Unit functionality */}
-                                    <button className="text-sm text-indigo-600 font-medium hover:underline flex items-center">
-                                        <Plus className="w-4 h-4 mr-1" /> Add Unit
-                                    </button>
+                        <div>
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                                    <LuLayoutList className="w-5 h-5 text-purple-600" />
+                                    Course Units
+                                </h2>
+                                <button
+                                    onClick={() => {
+                                        setEditingUnit(null);
+                                        setNewUnitName('');
+                                        setNewUnitDescription('');
+                                        setShowAddUnit(true);
+                                    }}
+                                    className="text-sm bg-purple-600 text-white font-bold hover:bg-purple-700 shadow-lg shadow-purple-500/30 px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 transform active:scale-95"
+                                >
+                                    <LuPlus className="w-4 h-4" /> Create New Unit
+                                </button>
+                            </div>
+
+                            {showAddUnit && (
+                                <div className="bg-white p-6 rounded-[1.5rem] border border-purple-100 shadow-lg mb-8 animate-[fade-in_0.3s_ease-out]">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h4 className="font-bold text-gray-800 uppercase text-xs tracking-wider">
+                                            {editingUnit ? 'Edit Unit Details' : 'Create New Unit'}
+                                        </h4>
+                                        <button onClick={() => setShowAddUnit(false)} className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition-colors">
+                                            <LuX className="w-5 h-5" />
+                                        </button>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={newUnitName}
+                                        onChange={(e) => setNewUnitName(e.target.value)}
+                                        placeholder="Unit Name (e.g. Unit 1: Basics)"
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-purple-500 outline-none font-bold text-gray-900 mb-4"
+                                        autoFocus
+                                    />
+                                    <textarea
+                                        value={newUnitDescription}
+                                        onChange={(e) => setNewUnitDescription(e.target.value)}
+                                        placeholder="Brief description of what this unit covers..."
+                                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-purple-500 outline-none resize-none h-28 text-sm mb-6 font-medium"
+                                    />
+                                    <div className="flex justify-end gap-3">
+                                        <button
+                                            onClick={() => {
+                                                setShowAddUnit(false);
+                                                setEditingUnit(null);
+                                                setNewUnitName('');
+                                                setNewUnitDescription('');
+                                            }}
+                                            className="px-5 py-2.5 text-sm font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-xl transition-colors"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleSaveUnit}
+                                            disabled={!newUnitName.trim()}
+                                            className="px-6 py-2.5 text-sm bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 shadow-lg shadow-purple-500/20 disabled:opacity-50 disabled:shadow-none flex items-center gap-2 transform active:scale-95 transition-all"
+                                        >
+                                            <LuSave className="w-4 h-4" />
+                                            {editingUnit ? 'Save Changes' : 'Create Unit'}
+                                        </button>
+                                    </div>
                                 </div>
+                            )}
+
+                            <div className="bg-gray-50/50 rounded-[2rem] p-1">
                                 <AdminUnitList
                                     units={units}
                                     onReorder={handleReorder}
-                                    onEdit={(id) => setSelectedUnitId(id)}
+                                    onEdit={handleEditUnit}
+                                    onDelete={handleDeleteUnit}
+                                    onManage={handleManageUnit}
                                 />
-                            </div>
-
-                            {/* Right Column: Content Editor */}
-                            <div className="lg:col-span-2">
-                                {selectedUnit ? (
-                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                        <div className="border-b pb-4 mb-6">
-                                            <h2 className="text-xl font-bold text-gray-900">{selectedUnit.unit_name}</h2>
-                                            <p className="text-gray-500">{selectedUnit.description}</p>
-                                        </div>
-
-                                        <UnitContentEditor
-                                            unitId={selectedUnit.unit_id}
-                                            parts={selectedUnit.parts || []}
-                                            onUpdatePart={handleUpdatePart}
-                                            onCreateAssignment={handleCreateAssignment}
-                                        />
-                                    </div>
-                                ) : (
-                                    <div className="h-full flex flex-col items-center justify-center text-gray-400 bg-white rounded-xl border border-dashed border-gray-300 p-10 min-h-[400px]">
-                                        <div className="text-5xl mb-4">👈</div>
-                                        <p className="text-lg font-medium">Select a unit to manage its content</p>
-                                    </div>
-                                )}
                             </div>
                         </div>
                     )}

@@ -20,16 +20,58 @@ router.post('/units/reorder',
     adminContentController.reorderUnits
 );
 
+// Create Unit
+router.post('/units/create',
+    adminOnly,
+    adminContentController.createUnit
+);
+
+// Update Unit
+router.put('/units/:unitId',
+    adminOnly,
+    adminContentController.updateUnit
+);
+
+// Delete Unit
+router.delete('/units/:unitId',
+    adminOnly,
+    adminContentController.deleteUnit
+);
+
 // Create Assignment (Transaction)
 router.post('/assignments/create',
     adminOnly,
     adminContentController.createAssignment
 );
 
+// Delete Assignment (Reset)
+router.delete('/assignments/:partId',
+    adminOnly,
+    adminContentController.deleteAssignment
+);
+
+// Get Assignment Details (Admin)
+router.get('/assignments/:partId',
+    adminOnly,
+    adminContentController.getAssignmentByPart
+);
+
 // Update Learning Part
 router.put('/parts/:partId',
     adminOnly,
     adminContentController.updateLearningPart
+);
+
+// Delete Learning Part
+router.delete('/parts/:partId',
+    adminOnly,
+    adminContentController.deleteLearningPart
+);
+
+// Create Learning Part
+router.post('/parts',
+    adminOnly,
+    adminContentController.createLearningPart
 );
 
 // Delete Question

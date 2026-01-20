@@ -40,9 +40,11 @@ class AssignmentModel {
             );
 
             const assignmentId = assignResult.insertId;
+            console.log('DEBUG: Assignment created with ID:', assignmentId);
 
             // 2. Create Questions
             for (const q of questionsData) {
+                console.log('DEBUG: Inserting question:', q);
                 await connection.execute(
                     `INSERT INTO questions (
                         assignment_id, question_text, question_type,
@@ -51,12 +53,105 @@ class AssignmentModel {
                         difficulty_level, question_order, is_active
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
                     [
-                        assignmentId, q.question_text, q.question_type || 'single',
-                        q.option_a, q.option_b, q.option_c, q.option_d, q.option_e,
-                        q.correct_answers, q.marks || 1, q.explanation,
-                        q.difficulty_level || 'medium', q.question_order
+                        assignmentId, q.question_text || null, q.question_type || 'single',
+                        q.option_a || null, q.option_b || null, q.option_c || null, q.option_d || null, q.option_e || null,
+                        q.correct_answers || null, q.marks || 1, q.explanation || null,
+                        q.difficulty_level || 'medium', q.question_order || 0
                     ]
                 );
+            }
+
+            await connection.commit();
+            return { assignment_id: assignmentId, success: true };
+
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    }
+
+    // Update Assignment with Questions (Transaction)
+    static async updateAssignmentWithQuestions(assignmentId, assignmentData, questionsData) {
+        if (!db.pool) await db.connect();
+        const connection = await db.pool.getConnection();
+
+        try {
+            await connection.beginTransaction();
+
+            // 1. Update Assignment
+            const {
+                title, description,
+                total_marks, passing_marks, time_limit_minutes, max_attempts
+            } = assignmentData;
+
+            await connection.execute(
+                `UPDATE assignments SET
+                    title = ?, description = ?,
+                    total_marks = ?, passing_marks = ?,
+                    time_limit_minutes = ?, max_attempts = ?
+                WHERE assignment_id = ?`,
+                [title, description, total_marks, passing_marks, time_limit_minutes, max_attempts, assignmentId]
+            );
+
+            // 2. Handle Questions
+            // Get existing active questions
+            const [existingQuestions] = await connection.execute(
+                `SELECT question_id FROM questions WHERE assignment_id = ? AND is_active = TRUE`,
+                [assignmentId]
+            );
+            const existingIds = existingQuestions.map(q => q.question_id);
+
+            // Filter input questions that have an ID (are existing questions)
+            const inputIds = questionsData
+                .filter(q => q.question_id)
+                .map(q => parseInt(q.question_id));
+
+            // Identify Deletions (Deactivate)
+            const toDeactivate = existingIds.filter(id => !inputIds.includes(id));
+            if (toDeactivate.length > 0) {
+                await connection.execute(
+                    `UPDATE questions SET is_active = FALSE WHERE question_id IN (${toDeactivate.join(',')})`
+                );
+            }
+
+            // Update or Insert
+            for (const q of questionsData) {
+                if (q.question_id && existingIds.includes(parseInt(q.question_id))) {
+                    // Update
+                    await connection.execute(
+                        `UPDATE questions SET
+                            question_text = ?, question_type = ?,
+                            option_a = ?, option_b = ?, option_c = ?, option_d = ?, option_e = ?,
+                            correct_answers = ?, marks = ?, explanation = ?,
+                            difficulty_level = ?, question_order = ?
+                        WHERE question_id = ?`,
+                        [
+                            q.question_text || null, q.question_type || 'single',
+                            q.option_a || null, q.option_b || null, q.option_c || null, q.option_d || null, q.option_e || null,
+                            q.correct_answers || null, q.marks || 1, q.explanation || null,
+                            q.difficulty_level || 'medium', q.question_order || 0,
+                            q.question_id
+                        ]
+                    );
+                } else {
+                    // Insert
+                    await connection.execute(
+                        `INSERT INTO questions (
+                            assignment_id, question_text, question_type,
+                            option_a, option_b, option_c, option_d, option_e,
+                            correct_answers, marks, explanation,
+                            difficulty_level, question_order, is_active
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)`,
+                        [
+                            assignmentId, q.question_text || null, q.question_type || 'single',
+                            q.option_a || null, q.option_b || null, q.option_c || null, q.option_d || null, q.option_e || null,
+                            q.correct_answers || null, q.marks || 1, q.explanation || null,
+                            q.difficulty_level || 'medium', q.question_order || 0
+                        ]
+                    );
+                }
             }
 
             await connection.commit();
@@ -100,7 +195,9 @@ class AssignmentModel {
                 option_e,
                 marks,
                 difficulty_level,
-                question_order
+                question_order,
+                correct_answers,
+                explanation
             FROM questions
             WHERE assignment_id = ? AND is_active = TRUE
         `;
@@ -431,6 +528,52 @@ class AssignmentModel {
             percentage: parseFloat(percentage.toFixed(2)),
             review_data: reviewData
         };
+    }
+    // Delete Assignment
+    static async deleteAssignment(assignmentId) {
+        if (!db.pool) await db.connect();
+        const connection = await db.pool.getConnection();
+
+        try {
+            await connection.beginTransaction();
+
+            // 1. Delete/Deactivate Questions
+            await connection.execute(
+                'DELETE FROM questions WHERE assignment_id = ?',
+                [assignmentId]
+            );
+
+            // 2. Delete/Deactivate Assignment Attempts/Results
+            await connection.execute(
+                'DELETE FROM submissions WHERE assignment_id = ?',
+                [assignmentId]
+            );
+
+            await connection.execute(
+                'DELETE FROM assignment_attempts WHERE assignment_id = ?',
+                [assignmentId]
+            );
+
+            await connection.execute(
+                'DELETE FROM assignment_results WHERE assignment_id = ?',
+                [assignmentId]
+            );
+
+            // 3. Delete Assignment
+            await connection.execute(
+                'DELETE FROM assignments WHERE assignment_id = ?',
+                [assignmentId]
+            );
+
+            await connection.commit();
+            return { success: true };
+
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
     }
 }
 
