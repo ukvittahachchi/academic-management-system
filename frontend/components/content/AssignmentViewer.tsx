@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { ContentMetadata } from '@/lib/types/content';
 import { assignmentAPI } from '@/lib/api-client';
@@ -11,6 +12,7 @@ import {
     StudentAnswer,
     SubmissionResponse
 } from '@/lib/types/assignment';
+import { LuTriangleAlert, LuMaximize, LuEyeOff } from "react-icons/lu";
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 
@@ -32,17 +34,82 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
     const [timeRemaining, setTimeRemaining] = useState<number>(0);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [showConfirmSubmit, setShowConfirmSubmit] = useState<boolean>(false);
+
+    // Proctoring State
+    const [violationCount, setViolationCount] = useState<number>(0);
+    const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
+    const [showWarning, setShowWarning] = useState<boolean>(false);
+    const [warningMessage, setWarningMessage] = useState<string>('');
+    const [mounted, setMounted] = useState(false);
+
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const autoSaveRef = useRef<NodeJS.Timeout | null>(null);
+    const assignmentContainerRef = useRef<HTMLDivElement>(null);
 
     // Load assignment details
+
     useEffect(() => {
+        setMounted(true);
         loadAssignmentDetails();
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
             if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
         };
     }, [content.part_id]);
+
+    // Proctoring: Event Listeners
+    useEffect(() => {
+        if (view !== 'attempt') return;
+
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                handleViolation("You left the assignment tab!");
+            }
+        };
+
+        const handleWindowBlur = () => {
+            // Optional: You might want to be less strict here as clicking outside might be accidental
+            // or just warn without incrementing if you prefer.
+            if (document.activeElement === document.body) {
+                handleViolation("Constraint violation: Window lost focus.");
+            }
+        };
+
+        const handleFullScreenChange = () => {
+            if (!document.fullscreenElement) {
+                setIsFullScreen(false);
+                handleViolation("You exited full-screen mode!");
+            } else {
+                setIsFullScreen(true);
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('blur', handleWindowBlur);
+        document.addEventListener('fullscreenchange', handleFullScreenChange);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('blur', handleWindowBlur);
+            document.removeEventListener('fullscreenchange', handleFullScreenChange);
+        };
+    }, [view]);
+
+    const handleViolation = (message: string) => {
+        setViolationCount(prev => prev + 1);
+        setWarningMessage(message);
+        setShowWarning(true);
+    };
+
+    const enterFullScreen = async () => {
+        try {
+            if (assignmentContainerRef.current) {
+                await assignmentContainerRef.current.requestFullscreen();
+            }
+        } catch (e) {
+            console.error("Full screen denied", e);
+        }
+    };
 
     const loadAssignmentDetails = async () => {
         try {
@@ -65,6 +132,9 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
     const startAttempt = async () => {
         try {
             setLoading(true);
+            // Request full screen immediately
+            await enterFullScreen();
+
             const data = await assignmentAPI.startAssignmentAttempt(content.part_id);
             setAssignmentData(data);
             setTimeRemaining(data.time_limit_seconds);
@@ -310,7 +380,9 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
         const currentAnswer = answers[currentQ.question_id];
 
         return (
-            <div className="h-full flex flex-col bg-gray-50">
+            <div
+                className="h-full flex flex-col bg-gray-50 overflow-y-auto"
+            >
                 {/* Header with Timer */}
                 <div className="bg-white shadow">
                     <div className="max-w-7xl mx-auto px-4 py-4">
@@ -330,6 +402,14 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
                                     }`}>
                                     ⏱️ {formatTime(timeRemaining)}
                                 </div>
+
+                                {/* Violation Badge */}
+                                {violationCount > 0 && (
+                                    <div className="flex items-center gap-2 px-3 py-2 bg-red-100 text-red-700 rounded-lg font-medium text-sm">
+                                        <LuTriangleAlert />
+                                        <span>Violations: {violationCount}</span>
+                                    </div>
+                                )}
 
                                 {/* Progress */}
                                 <div className="text-center">
@@ -783,12 +863,67 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
         );
     }
 
-    return (
-        <div className="h-full">
+    const renderedContent = (
+        <div ref={assignmentContainerRef} className="h-full bg-white">
             {view === 'details' && renderDetailsView()}
             {view === 'attempt' && renderAttemptView()}
             {view === 'results' && renderResultsView()}
             {showConfirmSubmit && renderConfirmModal()}
         </div>
+    );
+
+    // Portal the warning modal to document.body
+    const warningModal = showWarning && mounted ? createPortal(
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[99999] backdrop-blur-md">
+            <div className="bg-white rounded-xl p-8 max-w-md w-full mx-4 shadow-2xl animate-[shake_0.5s_ease-in-out]">
+                <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 text-red-600 text-3xl">
+                        <LuEyeOff />
+                    </div>
+                    <h3 className="text-2xl font-black text-gray-900 mb-2">
+                        Warning!
+                    </h3>
+                    <p className="text-red-600 font-bold text-lg mb-2">
+                        {warningMessage}
+                    </p>
+                    <p className="text-gray-600">
+                        You are not allowed to leave the assignment screen.
+                        <br />
+                        <strong>Quit</strong> to submit with current progress (may result in low score) or <strong>Continue</strong> to return (violation recorded).
+                    </p>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                    <button
+                        onClick={() => {
+                            setShowWarning(false);
+                            // Submit immediately (Force Quit)
+                            handleSubmit();
+                        }}
+                        className="w-full py-3 border-2 border-red-100 text-red-600 font-bold rounded-lg hover:bg-red-50 transition-colors"
+                    >
+                        Quit Assignment (Submit Now)
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            setShowWarning(false);
+                            enterFullScreen();
+                        }}
+                        className="w-full py-3 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition-colors"
+                    >
+                        I Understand & Return to Full Screen
+                    </button>
+                </div>
+            </div>
+        </div>,
+        document.body
+    ) : null;
+
+    return (
+        <>
+            {renderedContent}
+            {warningModal}
+        </>
     );
 }
