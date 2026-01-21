@@ -898,7 +898,7 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
                         onClick={() => {
                             setShowWarning(false);
                             // Submit immediately (Force Quit)
-                            handleSubmit();
+                            confirmSubmit();
                         }}
                         className="w-full py-3 border-2 border-red-100 text-red-600 font-bold rounded-lg hover:bg-red-50 transition-colors"
                     >
