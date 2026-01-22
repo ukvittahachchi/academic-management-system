@@ -17,11 +17,11 @@ import FilterPanel from '@/components/teacher/FilterPanel';
 import Notifications from '@/components/dashboard/Notifications'; // Reusing Student Notifications
 import { format } from 'date-fns';
 import {
-    LuClipboardList,
     LuFileText,
-    LuMegaphone,
-    LuPrinter
+    LuUsers,
+    LuBookOpen
 } from 'react-icons/lu';
+import { BarChart3 } from 'lucide-react';
 
 export default function TeacherDashboard() {
     const router = useRouter();
@@ -158,13 +158,6 @@ export default function TeacherDashboard() {
                     {/* Quick Access Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-12">
                         <QuickActionCard
-                            title="Manage Assignments"
-                            description="Create & Edit Tasks"
-                            icon={LuClipboardList}
-                            color="blue"
-                            onClick={() => router.push('/teacher/assignments')}
-                        />
-                        <QuickActionCard
                             title="Export Reports"
                             description="Download Data"
                             icon={LuFileText}
@@ -172,40 +165,26 @@ export default function TeacherDashboard() {
                             onClick={() => router.push('/teacher/reports')}
                         />
                         <QuickActionCard
-                            title="Announcements"
-                            description="Message Class"
-                            icon={LuMegaphone}
-                            color="purple"
-                            onClick={() => { /* TODO: Implement Announcements */ }}
+                            title="Student Directory"
+                            description="View All Students"
+                            icon={LuUsers}
+                            color="blue"
+                            onClick={() => setActiveView('students')}
                         />
                         <QuickActionCard
-                            title="Print Summary"
-                            description="Hardcopy View"
-                            icon={LuPrinter}
-                            color="orange"
-                            onClick={() => window.print()}
+                            title="My Classes"
+                            description="Manage Courses"
+                            icon={LuBookOpen}
+                            color="purple"
+                            onClick={() => setActiveView('classes')}
                         />
-                    </div>
-
-                    {/* Navigation Tabs - Styled as Pills */}
-                    <div className="flex overflow-x-auto gap-2 mb-8 pb-2 no-scrollbar">
-                        {[
-                            { id: 'overview', label: 'Overview' },
-                            { id: 'classes', label: 'My Classes' },
-                            { id: 'students', label: 'Students' },
-                            { id: 'analytics', label: 'Analytics' },
-                        ].map((tab) => (
-                            <button
-                                key={tab.id}
-                                onClick={() => setActiveView(tab.id as any)}
-                                className={`px-6 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${activeView === tab.id
-                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
-                                    : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
-                                    }`}
-                            >
-                                {tab.label}
-                            </button>
-                        ))}
+                        <QuickActionCard
+                            title="Analytics"
+                            description="Performance Stats"
+                            icon={BarChart3}
+                            color="orange"
+                            onClick={() => setActiveView('analytics')}
+                        />
                     </div>
 
                     {/* Dashboard Views */}

@@ -66,20 +66,26 @@ export default function Notifications({ notifications }: NotificationsProps) {
                             <div className="flex-1">
                                 <h4 className="font-medium">{notification.title}</h4>
                                 <p className="text-sm mt-1">{notification.message}</p>
-                                <p className="text-xs opacity-75 mt-2">
-                                    {(() => {
-                                        try {
-                                            const date = new Date(notification.relevant_date);
-                                            // Check if date is valid
-                                            if (isNaN(date.getTime())) {
-                                                return 'Date processing...';
-                                            }
-                                            return format(date, 'MMM dd, yyyy • hh:mm a');
-                                        } catch (e) {
-                                            return 'Date processing...';
+                                {(() => {
+                                    try {
+                                        const rawDate = notification.relevant_date;
+                                        if (!rawDate) return 'No date';
+
+                                        // Handle MySQL format 'YYYY-MM-DD HH:MM:SS' by replacing space with T for better compatibility
+                                        const dateStr = typeof rawDate === 'string' ? rawDate.replace(' ', 'T') : rawDate;
+                                        const date = new Date(dateStr);
+
+                                        // Check if date is valid
+                                        if (isNaN(date.getTime())) {
+                                            console.error('Invalid date:', rawDate);
+                                            return `Invalid Date: ${String(rawDate)}`;
                                         }
-                                    })()}
-                                </p>
+                                        return format(date, 'MMM dd, yyyy • hh:mm a');
+                                    } catch (e) {
+                                        console.error('Date parsing error:', e);
+                                        return `Error: ${String(notification.relevant_date)}`;
+                                    }
+                                })()}
                             </div>
                         </div>
                     </div>
