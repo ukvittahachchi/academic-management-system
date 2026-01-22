@@ -223,6 +223,49 @@ class DashboardModel {
         const rows = await db.execute(query, [studentId, studentId]);
         return rows;
     }
+
+    // Get notifications for teacher (Assignment Due, New Submissions)
+    static async getTeacherNotifications(teacherId) {
+        const query = `
+            /* Assignments due in next 3 days */
+            SELECT 
+                'assignment_due' as type,
+                a.title,
+                CONCAT('Assignment "', a.title, '" is due in ', DATEDIFF(a.end_date, NOW()), ' days') as message,
+                a.end_date as relevant_date
+            FROM assignments a
+            JOIN learning_parts lp ON a.part_id = lp.part_id
+            JOIN units un ON lp.unit_id = un.unit_id
+            JOIN modules m ON un.module_id = m.module_id
+            JOIN teacher_classes tc ON m.module_id = tc.module_id
+            WHERE tc.teacher_id = ?
+                AND a.is_active = TRUE
+                AND a.end_date BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 3 DAY)
+            
+            UNION
+            
+            /* New submissions in last 24 hours */
+            SELECT 
+                'new_submission' as type,
+                a.title,
+                CONCAT('New submission for "', a.title, '"') as message,
+                s.submitted_at as relevant_date
+            FROM submissions s
+            JOIN assignments a ON s.assignment_id = a.assignment_id
+            JOIN learning_parts lp ON a.part_id = lp.part_id
+            JOIN units un ON lp.unit_id = un.unit_id
+            JOIN modules m ON un.module_id = m.module_id
+            JOIN teacher_classes tc ON m.module_id = tc.module_id
+            WHERE tc.teacher_id = ?
+                AND s.submitted_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+            
+            ORDER BY relevant_date DESC
+            LIMIT 10
+        `;
+
+        const rows = await db.execute(query, [teacherId, teacherId]);
+        return rows;
+    }
 }
 
 module.exports = DashboardModel;

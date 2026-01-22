@@ -138,13 +138,7 @@ export default function TeacherDashboard() {
         );
     }
 
-    const { overview, classes, recent_activity, performance_distribution, top_performers, students_needing_attention, recent_reports } = dashboardData;
-
-    // TODO: Fetch real notifications. Using dummy data for now to match UI until endpoint exists.
-    const notifications = [
-        { type: 'assignment_due', title: 'Midterm Grading', message: 'Grades for Midterm are due by Friday.', relevant_date: new Date().toISOString() },
-        { type: 'new_content', title: 'New Submission', message: 'John Doe submitted "Python Basics".', relevant_date: new Date().toISOString() }
-    ];
+    const { overview, classes, recent_activity, performance_distribution, top_performers, students_needing_attention, recent_reports, notifications } = dashboardData;
 
     return (
         <ProtectedRoute allowedRoles={['teacher', 'admin']}>

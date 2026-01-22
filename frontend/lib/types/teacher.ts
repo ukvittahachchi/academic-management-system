@@ -1,4 +1,5 @@
 import { ReportData } from './report';
+import { Notification } from './dashboard';
 
 export interface TeacherClass {
     assignment_id: number;
@@ -152,6 +153,7 @@ export interface TeacherDashboardData {
     activity_trends: ActivityTrend[];
     top_performers: TopPerformer[];
     students_needing_attention: StudentNeedingAttention[];
+    notifications: Notification[];
 }
 
 export interface TeacherFilters {

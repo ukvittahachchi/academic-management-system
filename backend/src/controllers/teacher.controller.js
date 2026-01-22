@@ -1,4 +1,5 @@
 const TeacherModel = require('../models/Teacher.model');
+const DashboardModel = require('../models/Dashboard.model'); // Added for notifications
 const ReportModel = require('../models/Report.model');
 const asyncHandler = require('../utils/asyncHandler');
 const AppError = require('../utils/errors');
@@ -53,14 +54,17 @@ class TeacherController {
                 activityTrends,
                 topPerformers,
                 studentsNeedingAttention,
-                recentReports
+                recentReports,
+                notifications
             ] = await Promise.all([
                 TeacherModel.getTeacherClasses(teacherId),
                 TeacherModel.getPerformanceDistribution(teacherId),
                 TeacherModel.getActivityTrends(teacherId, 7),
                 TeacherModel.getTopPerformers(teacherId, 5),
+                TeacherModel.getTopPerformers(teacherId, 5),
                 TeacherModel.getStudentsNeedingAttention(teacherId, 5),
-                ReportModel.getReports(req.user.schoolId, teacherId, 'teacher', 5, 0)
+                ReportModel.getReports(req.user.schoolId, teacherId, 'teacher', 5, 0),
+                DashboardModel.getTeacherNotifications(teacherId)
             ]);
 
             // Cast model results
@@ -104,7 +108,9 @@ class TeacherController {
                 activity_trends: activityTrends,
                 top_performers: topPerformers,
                 students_needing_attention: studentsNeedingAttention,
-                recent_reports: recentReports
+                students_needing_attention: studentsNeedingAttention,
+                recent_reports: recentReports,
+                notifications: notifications
             };
 
             res.json({

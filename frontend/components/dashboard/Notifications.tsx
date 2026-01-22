@@ -67,7 +67,18 @@ export default function Notifications({ notifications }: NotificationsProps) {
                                 <h4 className="font-medium">{notification.title}</h4>
                                 <p className="text-sm mt-1">{notification.message}</p>
                                 <p className="text-xs opacity-75 mt-2">
-                                    {format(new Date(notification.relevant_date), 'MMM dd, yyyy • hh:mm a')}
+                                    {(() => {
+                                        try {
+                                            const date = new Date(notification.relevant_date);
+                                            // Check if date is valid
+                                            if (isNaN(date.getTime())) {
+                                                return 'Date processing...';
+                                            }
+                                            return format(date, 'MMM dd, yyyy • hh:mm a');
+                                        } catch (e) {
+                                            return 'Date processing...';
+                                        }
+                                    })()}
                                 </p>
                             </div>
                         </div>
