@@ -35,6 +35,13 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     const [showConfirmSubmit, setShowConfirmSubmit] = useState<boolean>(false);
 
+    // Security State
+    const [securityCountdown, setSecurityCountdown] = useState<number | null>(null);
+    const [isSecurityViolation, setIsSecurityViolation] = useState<boolean>(false);
+    const [hasEnteredFullscreen, setHasEnteredFullscreen] = useState<boolean>(false);
+    const securityTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const hasEnteredFullscreenRef = useRef<boolean>(false);
+
     // Proctoring State
     const [violationCount, setViolationCount] = useState<number>(0);
     const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
@@ -54,6 +61,7 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
         return () => {
             if (timerRef.current) clearInterval(timerRef.current);
             if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
+            if (securityTimerRef.current) clearInterval(securityTimerRef.current);
         };
     }, [content.part_id]);
 
@@ -63,24 +71,30 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
 
         const handleVisibilityChange = () => {
             if (document.hidden) {
-                handleViolation("You left the assignment tab!");
+                if (hasEnteredFullscreenRef.current) {
+                    handleSecurityViolationStart();
+                }
             }
         };
 
         const handleWindowBlur = () => {
-            // Optional: You might want to be less strict here as clicking outside might be accidental
-            // or just warn without incrementing if you prefer.
-            if (document.activeElement === document.body) {
-                handleViolation("Constraint violation: Window lost focus.");
-            }
+            // Strict mode: if window loses focus, treat as violation potentially
+            // For now, let's stick to Fullscreen as the primary authorized state.
         };
 
         const handleFullScreenChange = () => {
             if (!document.fullscreenElement) {
                 setIsFullScreen(false);
-                handleViolation("You exited full-screen mode!");
+                if (hasEnteredFullscreenRef.current) {
+                    handleSecurityViolationStart();
+                }
             } else {
                 setIsFullScreen(true);
+                if (!hasEnteredFullscreenRef.current) {
+                    hasEnteredFullscreenRef.current = true;
+                    setHasEnteredFullscreen(true);
+                }
+                handleSecurityViolationEnd();
             }
         };
 
@@ -88,12 +102,80 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
         window.addEventListener('blur', handleWindowBlur);
         document.addEventListener('fullscreenchange', handleFullScreenChange);
 
+        // Initial check
+        if (document.fullscreenElement) {
+            setIsFullScreen(true);
+            hasEnteredFullscreenRef.current = true;
+            setHasEnteredFullscreen(true);
+        }
+
         return () => {
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('blur', handleWindowBlur);
             document.removeEventListener('fullscreenchange', handleFullScreenChange);
         };
     }, [view]);
+
+    // Security Violation Logic
+    const handleSecurityViolationStart = () => {
+        if (isSecurityViolation) return; // Already in violation
+
+        setIsSecurityViolation(true);
+        setSecurityCountdown(10); // 10 seconds to return
+
+        if (securityTimerRef.current) clearInterval(securityTimerRef.current);
+
+        securityTimerRef.current = setInterval(() => {
+            setSecurityCountdown(prev => {
+                if (prev === null) return 10;
+                if (prev <= 1) {
+                    // Time up!
+                    if (securityTimerRef.current) clearInterval(securityTimerRef.current);
+                    handleSecurityTermination();
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+    };
+
+    const handleSecurityViolationEnd = () => {
+        setIsSecurityViolation(false);
+        setSecurityCountdown(null);
+        if (securityTimerRef.current) clearInterval(securityTimerRef.current);
+    };
+
+    const handleSecurityTermination = async () => {
+        setIsSecurityViolation(false);
+        setSecurityCountdown(null);
+
+        // Auto-submit with empty/current answers and 0 marks (handled by backend or context effectively)
+        // Since we can't easily force 0 marks on backend without changing API, 
+        // we will submit what we have but the user will likely fail if they haven't finished.
+        // Or we can clear answers before submitting to ensure 0.
+        // Let's clear answers to ensure penalty.
+
+        try {
+            setIsSubmitting(true);
+            // Clear all answers to ensure 0 marks
+            const emptyAnswers = {};
+            console.log('Security violation: Auto-submitting with empty answers for attempt', assignmentData!.attempt.attempt_id);
+
+
+            const result = await assignmentAPI.submitAssignment(
+                assignmentData!.attempt.attempt_id,
+                emptyAnswers
+            );
+            setSubmissionResult(result);
+            setView('results');
+            // Show a specific error message about security violation
+            setError('Assignment terminated due to security violation!');
+        } catch (err: any) {
+            setError('Security violation termination failed.');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     const handleViolation = (message: string) => {
         setViolationCount(prev => prev + 1);
@@ -118,8 +200,8 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
             setDetailsData(data);
 
             if (data.canAttempt.hasActiveAttempt) {
-                // Resume existing attempt
-                await startAttempt();
+                // Do not auto-start, let user click Resume
+                setLoading(false);
             } else {
                 setLoading(false);
             }
@@ -262,6 +344,7 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
             // Stop timers
             if (timerRef.current) clearInterval(timerRef.current);
             if (autoSaveRef.current) clearTimeout(autoSaveRef.current);
+            if (securityTimerRef.current) clearInterval(securityTimerRef.current);
 
             // Mark as completed if passed
             if (result.passed && onComplete) {
@@ -352,6 +435,10 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
                                     <span className="text-green-600 mr-2">✓</span>
                                     <span>Submit before time runs out</span>
                                 </li>
+                                <li className="flex items-start text-red-600 font-bold">
+                                    <span className="mr-2">⚠️</span>
+                                    <span>Do not exit fullscreen or switch tabs!</span>
+                                </li>
                             </ul>
                         </div>
                     </div>
@@ -361,7 +448,7 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
                             onClick={startAttempt}
                             className="px-8 py-3 bg-blue-600 text-white text-lg font-medium rounded-lg hover:bg-blue-700 transition-colors"
                         >
-                            Start Assignment
+                            {detailsData.canAttempt.hasActiveAttempt ? 'Resume Assignment' : 'Start Assignment'}
                         </button>
                         <p className="text-gray-500 text-sm mt-4">
                             You have {detailsData.assignment.max_attempts - (detailsData.canAttempt.attemptsUsed || 0)} attempts remaining
@@ -378,6 +465,54 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
         const currentQ = assignmentData.questions[currentQuestion];
         const isSingleChoice = currentQ.question_type === 'single';
         const currentAnswer = answers[currentQ.question_id];
+
+        // Security Violation Overlay
+        if (isSecurityViolation) {
+            return (
+                <div className="fixed inset-0 z-50 bg-red-900 flex flex-col items-center justify-center text-white text-center p-8">
+                    <LuTriangleAlert className="w-24 h-24 mb-6 animate-pulse" />
+                    <h1 className="text-5xl font-black mb-4">SECURITY ALERT</h1>
+                    <p className="text-2xl mb-8 max-w-2xl">
+                        You have exited fullscreen mode. Please return immediately or your assignment will be terminated.
+                    </p>
+
+                    <div className="text-8xl font-black mb-12 bg-white/10 w-48 h-48 rounded-full flex items-center justify-center border-4 border-white/20">
+                        {securityCountdown}
+                    </div>
+
+                    <button
+                        onClick={enterFullScreen}
+                        className="px-10 py-4 bg-white text-red-900 text-xl font-bold rounded-xl hover:bg-gray-100 transition-transform active:scale-95 flex items-center gap-3"
+                    >
+                        <LuMaximize /> Return to Fullscreen
+                    </button>
+                </div>
+            );
+        }
+
+        // Initial Fullscreen Entry Overlay
+        if (!hasEnteredFullscreen) {
+            return (
+                <div className="fixed inset-0 z-50 bg-gray-900/95 backdrop-blur-sm flex flex-col items-center justify-center text-white text-center p-8">
+                    <div className="bg-white/10 p-8 rounded-3xl border border-white/10 max-w-lg w-full">
+                        <LuMaximize className="w-16 h-16 mb-6 mx-auto text-blue-400" />
+                        <h1 className="text-3xl font-bold mb-4">Fullscreen Required</h1>
+                        <p className="text-lg text-gray-300 mb-8">
+                            This assignment must be completed in fullscreen mode.
+                            Please enter fullscreen to begin.
+                        </p>
+
+                        <button
+                            onClick={enterFullScreen}
+                            className="w-full px-8 py-4 bg-blue-600 text-white text-lg font-bold rounded-xl hover:bg-blue-500 transition-all flex items-center justify-center gap-3"
+                        >
+                            <LuMaximize /> Enter Fullscreen
+                        </button>
+                    </div>
+                </div>
+            );
+        }
+
 
         return (
             <div
