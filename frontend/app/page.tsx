@@ -8,7 +8,20 @@ import {
 
 export default function Home() {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50 font-sans selection:bg-indigo-100 pb-8 overflow-x-hidden">
+    <div className="min-h-screen flex flex-col font-sans selection:bg-indigo-100 pb-8 overflow-x-hidden relative text-gray-900">
+      {/* Background Video */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="fixed top-0 left-0 w-full h-full object-cover -z-20"
+      >
+        <source src="/bg-video.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+      {/* Dark Overlay */}
+      <div className="fixed top-0 left-0 w-full h-full bg-black/50 -z-10" />
       {/* Navbar - Kept minimal and clean */}
       <nav className="w-full pt-2 sm:pt-4 px-4 sm:px-8 mb-2 sm:mb-4">
         <div className="max-w-[95%] mx-auto flex justify-between items-center">
@@ -24,10 +37,10 @@ export default function Home() {
               />
             </div>
             <div className="block">
-              <h1 className="text-xs sm:text-lg font-bold text-gray-800 leading-tight">
+              <h1 className="text-xs sm:text-lg font-bold text-white leading-tight drop-shadow-md">
                 ICT Academic System
               </h1>
-              <p className="text-[9px] sm:text-[10px] text-blue-600 font-bold tracking-wide">
+              <p className="text-[9px] sm:text-[10px] text-blue-300 font-bold tracking-wide drop-shadow-sm">
                 FUTURE LEARNING
               </p>
             </div>
@@ -47,63 +60,33 @@ export default function Home() {
 
       {/* Main Card Container */}
       <main className="flex-grow px-2 sm:px-4 md:px-8 flex items-center justify-center">
-        <div className="w-full max-w-[95%] mx-auto bg-white rounded-3xl lg:rounded-[3rem] overflow-hidden relative min-h-[auto] lg:min-h-[70vh] flex items-center shadow-2xl shadow-indigo-100/50 border border-gray-100 py-8 lg:py-0">
+        <div className="w-full max-w-[95%] lg:max-w-6xl mx-auto relative min-h-[auto] lg:min-h-[70vh] flex items-center justify-center py-8 lg:py-0">
 
-          {/* Background Decorative Elements */}
-          <div className="absolute top-0 right-0 w-full h-full overflow-hidden pointer-events-none">
-            <div className="absolute top-[-10%] right-[-5%] w-64 h-64 lg:w-96 lg:h-96 bg-indigo-50 rounded-full blur-3xl opacity-60"></div>
-            <div className="absolute bottom-[-10%] left-[-5%] w-64 h-64 lg:w-96 lg:h-96 bg-blue-50 rounded-full blur-3xl opacity-60"></div>
-          </div>
+          <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-12 py-8 lg:py-20 relative z-10">
+            <div className="flex flex-col items-center justify-center text-center space-y-8 animate-fade-in-up">
 
-          <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 py-8 lg:py-20 relative z-10">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+              <div className="space-y-4 sm:space-y-6 flex flex-col items-center">
+                <h1
+                  className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1] sm:leading-[1.1] flex flex-col items-center gap-2 drop-shadow-lg"
+                >
+                  <span>Modular Learning &</span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-blue-300 block sm:inline mt-2 sm:mt-0 drop-shadow-none">
+                    Assessment Platform
+                  </span>
+                </h1>
 
-              {/* Left Side: Content */}
-              <div className="flex flex-col text-center lg:text-left space-y-6 lg:space-y-8 animate-fade-in-up">
-                <div className="space-y-3 sm:space-y-4">
-                  <h1 className="text-4xl sm:text-5xl lg:text-7xl font-extrabold text-gray-900 tracking-tight leading-[1.1] sm:leading-[1.1]">
-                    Modular Learning & <br className="hidden sm:block" />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 to-blue-600 block sm:inline mt-2 sm:mt-0">
-                      Assessment Platform
-                    </span>
-                  </h1>
-                  <p className="text-base sm:text-lg text-gray-700 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
-                    To revolutionize the academic experience by delivering a centralized, automated, and secure digital platform that empowers students, streamlines teacher workflows, and provides administrators with data-driven control over curriculum and performance.
-                  </p>
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-2 sm:pt-4">
-                  <Link
-                    href="/change-password"
-                    className="inline-flex items-center justify-center px-8 py-3 sm:px-10 sm:py-4 text-lg sm:text-xl font-bold text-white transition-all duration-200 bg-indigo-600 rounded-xl sm:rounded-2xl hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600"
-                  >
-                    Get Started
-                  </Link>
-                </div>
+                <p className="text-base sm:text-lg text-gray-100 max-w-2xl mx-auto leading-relaxed font-medium drop-shadow-md">
+                  To revolutionize the academic experience by delivering a centralized, automated, and secure digital platform that empowers students, streamlines teacher workflows, and provides administrators with data-driven control over curriculum and performance.
+                </p>
               </div>
 
-              {/* Right Side: Video */}
-              <div className="relative w-full flex items-center justify-center lg:justify-end mt-8 lg:mt-0">
-                <div className="relative w-full max-w-[280px] sm:max-w-md lg:max-w-lg aspect-square">
-                  {/* Video Container - No border, just clean */}
-                  <div className="w-full h-full rounded-2xl lg:rounded-[2.5rem] overflow-hidden shadow-2xl shadow-indigo-200/50 transform hover:scale-[1.02] transition-transform duration-500 bg-gray-900 border-4 border-white relative">
-                    <video
-                      className="w-full h-full object-cover"
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      preload="auto"
-                    >
-                      <source src="/hero.mp4" type="video/mp4" />
-                      Your browser does not support the video tag.
-                    </video>
-                  </div>
-
-                  {/* Optional: Floating Elements around video to match style */}
-                  <div className="absolute -top-4 -right-4 sm:-top-6 sm:-right-6 w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-indigo-400 to-blue-500 rounded-full animate-float blur-sm opacity-60"></div>
-                  <div className="absolute -bottom-6 -left-6 sm:-bottom-8 sm:-left-8 w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-blue-400 to-cyan-300 rounded-full animate-float animation-delay-2000 blur-sm opacity-60"></div>
-                </div>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 sm:pt-6">
+                <Link
+                  href="/change-password"
+                  className="inline-flex items-center justify-center px-8 py-3 sm:px-10 sm:py-4 text-lg sm:text-xl font-bold text-white transition-all duration-200 bg-indigo-600 rounded-xl sm:rounded-2xl hover:bg-indigo-700 hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-600"
+                >
+                  Get Started
+                </Link>
               </div>
 
             </div>
@@ -131,10 +114,10 @@ export default function Home() {
 
             {/* Middle Text */}
             <div className="text-center">
-              <h4 className="text-sm sm:text-base font-bold text-gray-900">
+              <h4 className="text-sm sm:text-base font-bold text-white drop-shadow-md">
                 National Institute of Education
               </h4>
-              <p className="text-xs sm:text-sm text-gray-600 font-medium">
+              <p className="text-xs sm:text-sm text-gray-200 font-medium drop-shadow-sm">
                 Department of Information Technology
               </p>
             </div>
