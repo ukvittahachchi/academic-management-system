@@ -15,6 +15,7 @@ import {
 import { LuTriangleAlert, LuMaximize, LuEyeOff } from "react-icons/lu";
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
+import { useLayout } from '@/contexts/LayoutContext';
 
 interface AssignmentViewerProps {
     content: ContentMetadata;
@@ -23,6 +24,7 @@ interface AssignmentViewerProps {
 
 export default function AssignmentViewer({ content, onComplete }: AssignmentViewerProps) {
     const router = useRouter();
+    const { setSidebarHidden } = useLayout();
     const [view, setView] = useState<'details' | 'attempt' | 'results'>('details');
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
@@ -67,7 +69,12 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
 
     // Proctoring: Event Listeners
     useEffect(() => {
-        if (view !== 'attempt') return;
+        if (view !== 'attempt') {
+            setSidebarHidden(false);
+            return;
+        }
+
+        setSidebarHidden(true);
 
         const handleVisibilityChange = () => {
             if (document.hidden) {
@@ -82,10 +89,19 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
             // For now, let's stick to Fullscreen as the primary authorized state.
         };
 
+        const handleMouseLeave = () => {
+            console.log("Mouse leave detected");
+            if (hasEnteredFullscreenRef.current) {
+                handleSecurityViolationStart();
+            }
+        };
+
         const handleFullScreenChange = () => {
+            console.log("Fullscreen change detected. Element:", document.fullscreenElement);
             if (!document.fullscreenElement) {
                 setIsFullScreen(false);
                 if (hasEnteredFullscreenRef.current) {
+                    console.log("Exited fullscreen after entry -> Violation");
                     handleSecurityViolationStart();
                 }
             } else {
@@ -94,6 +110,7 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
                     hasEnteredFullscreenRef.current = true;
                     setHasEnteredFullscreen(true);
                 }
+                console.log("Entered fullscreen -> Resolution");
                 handleSecurityViolationEnd();
             }
         };
@@ -101,6 +118,7 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
         document.addEventListener('visibilitychange', handleVisibilityChange);
         window.addEventListener('blur', handleWindowBlur);
         document.addEventListener('fullscreenchange', handleFullScreenChange);
+        document.addEventListener('mouseleave', handleMouseLeave);
 
         // Initial check
         if (document.fullscreenElement) {
@@ -110,11 +128,13 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
         }
 
         return () => {
+            setSidebarHidden(false);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('blur', handleWindowBlur);
             document.removeEventListener('fullscreenchange', handleFullScreenChange);
+            document.removeEventListener('mouseleave', handleMouseLeave);
         };
-    }, [view]);
+    }, [view, setSidebarHidden]);
 
     // Security Violation Logic
     const handleSecurityViolationStart = () => {
@@ -144,6 +164,18 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
         setSecurityCountdown(null);
         if (securityTimerRef.current) clearInterval(securityTimerRef.current);
     };
+
+    // Lock scroll on violation
+    useEffect(() => {
+        if (isSecurityViolation) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isSecurityViolation]);
 
     const handleSecurityTermination = async () => {
         setIsSecurityViolation(false);
@@ -184,12 +216,19 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
     };
 
     const enterFullScreen = async () => {
+        console.log("Attempting to enter fullscreen...");
         try {
-            if (assignmentContainerRef.current) {
-                await assignmentContainerRef.current.requestFullscreen();
-            }
+            // Use documentElement to ensure the whole page goes fullscreen
+            // This is often more reliable than a specific container ref
+            await document.documentElement.requestFullscreen();
+            console.log("requestFullscreen resolved successfully");
+
+            // Optimistically clear the violation to show immediate feedback
+            // The event listener will also confirm this, but this makes the UI snappy
+            handleSecurityViolationEnd();
         } catch (e) {
             console.error("Full screen denied", e);
+            // If failed, we might want to alert the user or keep the overlay
         }
     };
 
@@ -466,10 +505,9 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
         const isSingleChoice = currentQ.question_type === 'single';
         const currentAnswer = answers[currentQ.question_id];
 
-        // Security Violation Overlay
         if (isSecurityViolation) {
             return (
-                <div className="fixed inset-0 z-50 bg-red-900 flex flex-col items-center justify-center text-white text-center p-8">
+                <div className="fixed inset-0 z-[99999] bg-red-900 flex flex-col items-center justify-center text-white text-center p-8">
                     <LuTriangleAlert className="w-24 h-24 mb-6 animate-pulse" />
                     <h1 className="text-5xl font-black mb-4">SECURITY ALERT</h1>
                     <p className="text-2xl mb-8 max-w-2xl">
@@ -581,7 +619,7 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
                 <div className="flex-1 overflow-hidden">
                     <div className="h-full grid grid-cols-1 lg:grid-cols-4">
                         {/* Questions Navigation */}
-                        <div className="lg:col-span-1 bg-white border-r p-4 overflow-y-auto">
+                        <div className="lg:col-span-1 bg-white border-r p-4 overflow-y-auto no-scrollbar">
                             <h3 className="font-semibold text-gray-900 mb-4">Questions</h3>
                             <div className="grid grid-cols-5 lg:grid-cols-2 gap-2">
                                 {assignmentData.questions.map((q, index) => (
@@ -618,7 +656,7 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
                         </div>
 
                         {/* Question Area */}
-                        <div className="lg:col-span-3 p-6 overflow-y-auto">
+                        <div className="lg:col-span-3 p-6 overflow-y-auto no-scrollbar">
                             <div className="max-w-3xl mx-auto">
                                 {/* Question Header */}
                                 <div className="flex justify-between items-start mb-6">
@@ -999,7 +1037,14 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
     }
 
     const renderedContent = (
-        <div ref={assignmentContainerRef} className="h-full bg-white">
+        <div
+            ref={assignmentContainerRef}
+            className={`bg-white ${isSecurityViolation ? 'overflow-hidden' : 'overflow-y-auto no-scrollbar'
+                } ${isFullScreen
+                    ? 'fixed inset-0 z-[100] h-screen w-screen'
+                    : 'h-full'
+                }`}
+        >
             {view === 'details' && renderDetailsView()}
             {view === 'attempt' && renderAttemptView()}
             {view === 'results' && renderResultsView()}
@@ -1057,6 +1102,37 @@ export default function AssignmentViewer({ content, onComplete }: AssignmentView
 
     return (
         <>
+            <style jsx global>{`
+                /* Hide scrollbar for Chrome, Safari and Opera */
+                .no-scrollbar::-webkit-scrollbar {
+                    display: none !important;
+                }
+                /* Hide scrollbar for IE, Edge and Firefox */
+                .no-scrollbar {
+                    -ms-overflow-style: none !important;
+                    scrollbar-width: none !important;
+                }
+                
+                /* Force hide all scrollbars when in fullscreen or security violation */
+                ${isFullScreen || isSecurityViolation ? `
+                    /* Nuclear option: Hide scrollbars on EVERTHING */
+                    * {
+                        -ms-overflow-style: none !important;
+                        scrollbar-width: none !important;
+                    }
+                    *::-webkit-scrollbar {
+                        display: none !important;
+                        width: 0 !important;
+                        height: 0 !important;
+                        background: transparent !important;
+                    }
+                    
+                    html, body {
+                        overflow: hidden !important;
+                        overscroll-behavior: none !important;
+                    }
+                ` : ''}
+            `}</style>
             {renderedContent}
             {warningModal}
         </>
