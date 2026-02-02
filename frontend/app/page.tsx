@@ -5,21 +5,13 @@ import {
   Play,
   Cpu
 } from 'lucide-react';
+import BackgroundVideo from '@/components/ui/BackgroundVideo';
 
 export default function Home() {
   return (
     <div className="min-h-screen flex flex-col font-sans selection:bg-indigo-100 pb-8 overflow-x-hidden relative text-gray-900">
       {/* Background Video */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="fixed top-0 left-0 w-full h-full object-cover -z-20"
-      >
-        <source src="/bg-video.mp4" type="video/mp4" />
-        Your browser does not support the video tag.
-      </video>
+      <BackgroundVideo src="/bg-video.mp4" />
       {/* Dark Overlay */}
       <div className="fixed top-0 left-0 w-full h-full bg-black/50 -z-10" />
       {/* Navbar - Kept minimal and clean */}
@@ -34,6 +26,7 @@ export default function Home() {
                 fill
                 className="object-contain"
                 priority
+                sizes="(max-width: 640px) 40px, 64px"
               />
             </div>
             <div className="block">

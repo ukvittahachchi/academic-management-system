@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { apiClient } from '@/lib/api-client';
 import { useToast } from '@/contexts/ToastContext';
 import { AdminUser } from '@/lib/types/admin';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { LoadingSpinner, TableSkeleton } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import {
     LuSearch,
@@ -165,9 +165,7 @@ export default function ClientUserManagement() {
             {/* Content Area */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {loading ? (
-                    <div className="flex justify-center py-20">
-                        <LoadingSpinner />
-                    </div>
+                    <TableSkeleton columns={4} rows={8} />
                 ) : error ? (
                     <ErrorMessage error={error} onRetry={fetchUsers} />
                 ) : users.length === 0 ? (

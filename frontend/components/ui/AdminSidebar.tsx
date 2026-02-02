@@ -11,10 +11,16 @@ import {
     LuShieldAlert,
     LuSettings,
     LuLogOut,
-    LuUser
+    LuUser,
+    LuX
 } from "react-icons/lu";
 
-export default function AdminSidebar() {
+interface AdminSidebarProps {
+    className?: string;
+    onClose?: () => void;
+}
+
+export default function AdminSidebar({ className = '', onClose }: AdminSidebarProps) {
     const router = useRouter();
     const pathname = usePathname();
 
@@ -38,13 +44,23 @@ export default function AdminSidebar() {
     ];
 
     return (
-        <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-100 h-screen fixed left-0 top-0 overflow-y-auto z-50">
+        <aside className={`flex-col w-64 bg-white border-r border-gray-100 h-screen fixed left-0 top-0 overflow-y-auto z-50 ${className}`}>
             <div className="p-8 pb-4">
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-slate-900/20">
-                        A
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-slate-900/20">
+                            A
+                        </div>
+                        <h1 className="text-xl font-bold text-gray-900 tracking-tight">Admin Portal</h1>
                     </div>
-                    <h1 className="text-xl font-bold text-gray-900 tracking-tight">Admin Portal</h1>
+                    {onClose && (
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 md:hidden"
+                        >
+                            <LuX className="w-6 h-6" />
+                        </button>
+                    )}
                 </div>
 
                 <nav className="space-y-2">
@@ -54,6 +70,7 @@ export default function AdminSidebar() {
                             <Link
                                 key={item.href}
                                 href={item.href}
+                                onClick={onClose}
                                 className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-200 group ${isActive
                                     ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/30'
                                     : 'text-gray-500 hover:bg-slate-50 hover:text-slate-900'

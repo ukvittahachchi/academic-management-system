@@ -55,22 +55,6 @@ export default function ClientAdminDashboard() {
         loadDashboard();
     }, []);
 
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-screen bg-gray-50/50">
-                <LoadingSpinner />
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="min-h-screen bg-gray-50/50 p-8">
-                <ErrorMessage error={error} onRetry={() => window.location.reload()} />
-            </div>
-        );
-    }
-
     return (
         <ProtectedRoute allowedRoles={['admin']}>
             <div className="min-h-screen bg-gray-50/50 pb-20">
@@ -95,13 +79,25 @@ export default function ClientAdminDashboard() {
                             <div className="flex gap-4">
                                 <div className="bg-white/5 backdrop-blur-md px-6 py-4 rounded-2xl font-black text-white border border-white/10 shadow-lg flex flex-col items-center min-w-[140px]">
                                     <div className="text-3xl flex items-center gap-2">
-                                        <LuUsers className="text-blue-400" /> {dashboardData?.systemStats?.totalUsers || 0}
+                                        {loading ? (
+                                            <div className="h-8 w-16 bg-white/20 animate-pulse rounded"></div>
+                                        ) : (
+                                            <>
+                                                <LuUsers className="text-blue-400" /> {dashboardData?.systemStats?.totalUsers || 0}
+                                            </>
+                                        )}
                                     </div>
                                     <span className="text-xs uppercase tracking-widest text-slate-400">Total Users</span>
                                 </div>
                                 <div className="bg-white/5 backdrop-blur-md px-6 py-4 rounded-2xl font-black text-white border border-white/10 shadow-lg flex flex-col items-center min-w-[140px]">
                                     <div className="text-3xl flex items-center gap-2">
-                                        <LuServer className="text-green-400" /> {dashboardData?.systemStats?.uptime || '98%'}
+                                        {loading ? (
+                                            <div className="h-8 w-16 bg-white/20 animate-pulse rounded"></div>
+                                        ) : (
+                                            <>
+                                                <LuServer className="text-green-400" /> {dashboardData?.systemStats?.uptime || '98%'}
+                                            </>
+                                        )}
                                     </div>
                                     <span className="text-xs uppercase tracking-widest text-slate-400">System Uptime</span>
                                 </div>
@@ -163,7 +159,19 @@ export default function ClientAdminDashboard() {
                                     </button>
                                 </div>
                                 <div className="divide-y divide-gray-50">
-                                    {dashboardData?.recentActivity?.length > 0 ? (
+                                    {loading ? (
+                                        <div className="p-6 space-y-4">
+                                            {[1, 2, 3].map((i) => (
+                                                <div key={i} className="flex gap-4 animate-pulse">
+                                                    <div className="w-10 h-10 bg-gray-200 rounded-xl"></div>
+                                                    <div className="flex-1 space-y-2">
+                                                        <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                                                        <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : dashboardData?.recentActivity?.length > 0 ? (
                                         dashboardData.recentActivity.map((activity: any, index: number) => (
                                             <div key={index} className="p-6 hover:bg-gray-50 transition-colors">
                                                 <div className="flex items-start gap-4">
@@ -206,33 +214,49 @@ export default function ClientAdminDashboard() {
                             <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100">
                                 <h3 className="text-lg font-bold text-gray-900 mb-6">System Status</h3>
                                 <div className="space-y-6">
-                                    <div>
-                                        <div className="flex justify-between text-sm font-medium mb-2">
-                                            <span className="text-gray-600">Server Load</span>
-                                            <span className="text-green-600">Healthy</span>
-                                        </div>
-                                        <div className="w-full bg-gray-100 rounded-full h-2">
-                                            <div className="bg-green-500 h-2 rounded-full" style={{ width: '25%' }}></div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between text-sm font-medium mb-2">
-                                            <span className="text-gray-600">Database</span>
-                                            <span className="text-blue-600">Active</span>
-                                        </div>
-                                        <div className="w-full bg-gray-100 rounded-full h-2">
-                                            <div className="bg-blue-500 h-2 rounded-full" style={{ width: '100%' }}></div>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between text-sm font-medium mb-2">
-                                            <span className="text-gray-600">Storage</span>
-                                            <span className="text-orange-600">{dashboardData?.systemStats?.storageUsed || '45%'}</span>
-                                        </div>
-                                        <div className="w-full bg-gray-100 rounded-full h-2">
-                                            <div className="bg-orange-500 h-2 rounded-full" style={{ width: '45%' }}></div>
-                                        </div>
-                                    </div>
+                                    {loading ? (
+                                        [1, 2, 3].map((i) => (
+                                            <div key={i} className="animate-pulse">
+                                                <div className="flex justify-between mb-2">
+                                                    <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                                                    <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                                                </div>
+                                                <div className="w-full bg-gray-100 rounded-full h-2">
+                                                    <div className="bg-gray-200 h-2 rounded-full w-1/2"></div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <>
+                                            <div>
+                                                <div className="flex justify-between text-sm font-medium mb-2">
+                                                    <span className="text-gray-600">Server Load</span>
+                                                    <span className="text-green-600">Healthy</span>
+                                                </div>
+                                                <div className="w-full bg-gray-100 rounded-full h-2">
+                                                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '25%' }}></div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="flex justify-between text-sm font-medium mb-2">
+                                                    <span className="text-gray-600">Database</span>
+                                                    <span className="text-blue-600">Active</span>
+                                                </div>
+                                                <div className="w-full bg-gray-100 rounded-full h-2">
+                                                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: '100%' }}></div>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <div className="flex justify-between text-sm font-medium mb-2">
+                                                    <span className="text-gray-600">Storage</span>
+                                                    <span className="text-orange-600">{dashboardData?.systemStats?.storageUsed || '45%'}</span>
+                                                </div>
+                                                <div className="w-full bg-gray-100 rounded-full h-2">
+                                                    <div className="bg-orange-500 h-2 rounded-full" style={{ width: '45%' }}></div>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
                                 </div>
                             </div>
 
@@ -246,7 +270,11 @@ export default function ClientAdminDashboard() {
                                             <LuTrendingUp className="w-6 h-6 text-green-400" />
                                         </div>
                                         <div>
-                                            <div className="text-2xl font-black">{dashboardData?.stats?.users?.trend || '+5%'}</div>
+                                            {loading ? (
+                                                <div className="h-8 w-24 bg-white/20 animate-pulse rounded mb-1"></div>
+                                            ) : (
+                                                <div className="text-2xl font-black">{dashboardData?.stats?.users?.trend || '+5%'}</div>
+                                            )}
                                             <div className="text-indigo-200 text-xs font-bold uppercase tracking-wide">New Users This Month</div>
                                         </div>
                                     </div>

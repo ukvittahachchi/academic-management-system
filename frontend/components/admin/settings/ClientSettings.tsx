@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/api-client';
 import { useToast } from '@/contexts/ToastContext';
 import { SystemSettings } from '@/lib/types/admin';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { LoadingSpinner, CardSkeleton } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import {
     LuSettings,
@@ -97,7 +97,7 @@ export default function ClientSettings() {
                             disabled={saving}
                             className="bg-gray-900 hover:bg-gray-800 text-white px-6 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-gray-500/20 flex items-center gap-2 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            {saving ? <LoadingSpinner className="w-5 h-5 text-white" /> : <LuSave className="w-5 h-5" />}
+                            {saving ? <LoadingSpinner size="small" color="white" /> : <LuSave className="w-5 h-5" />}
                             {saving ? 'Saving...' : 'Save Changes'}
                         </button>
                     </div>
@@ -107,8 +107,9 @@ export default function ClientSettings() {
             {/* Content Area */}
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {loading ? (
-                    <div className="flex justify-center py-20">
-                        <LoadingSpinner />
+                    <div className="space-y-6">
+                        <CardSkeleton />
+                        <CardSkeleton />
                     </div>
                 ) : (
                     <div className="space-y-6">
