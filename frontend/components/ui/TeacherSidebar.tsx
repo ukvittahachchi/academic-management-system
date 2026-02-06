@@ -4,16 +4,39 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/api-client';
-import { LuLayoutDashboard, LuBookOpen, LuClipboardList, LuFileText, LuUsers, LuLogOut, LuUser } from "react-icons/lu";
+import {
+    LuLayoutDashboard,
+    LuBookOpen,
+    LuClipboardList,
+    LuFileText,
+    LuUsers,
+    LuLogOut,
+    LuUser,
+    LuX
+} from "react-icons/lu";
 
-export default function TeacherSidebar() {
+import { useAuth } from '@/contexts/AuthContext';
+
+interface TeacherSidebarProps {
+    className?: string;
+    onClose?: () => void;
+}
+
+export default function TeacherSidebar({ className = '', onClose }: TeacherSidebarProps) {
     const router = useRouter();
     const pathname = usePathname();
+    const { user, logout, isAuthenticated, isLoading } = useAuth();
+
+    // Don't render sidebar if not authenticated
+    // We render nothing during loading to prevent flash of content before redirect
+    if (isLoading || !isAuthenticated || user?.role !== 'teacher') {
+        return null;
+    }
 
     const handleLogout = async () => {
         try {
-            await apiClient.logout();
-            router.push('/login');
+            await logout();
+            // router.push('/login'); // logout already redirects
         } catch (error) {
             console.error('Logout failed:', error);
             router.push('/login');
@@ -29,13 +52,23 @@ export default function TeacherSidebar() {
     ];
 
     return (
-        <aside className="hidden md:flex flex-col w-64 bg-white border-r border-gray-100 h-screen fixed left-0 top-0 overflow-y-auto z-50">
+        <aside className={`flex-col w-64 bg-white border-r border-gray-100 h-screen fixed left-0 top-0 overflow-y-auto z-50 ${className}`}>
             <div className="p-8 pb-4">
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-600/20">
-                        T
+                <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-600/20">
+                            T
+                        </div>
+                        <h1 className="text-xl font-bold text-gray-800 tracking-tight">ICT Academy</h1>
                     </div>
-                    <h1 className="text-xl font-bold text-gray-800 tracking-tight">ICT Academy</h1>
+                    {onClose && (
+                        <button
+                            onClick={onClose}
+                            className="p-2 hover:bg-gray-100 rounded-lg text-gray-500 md:hidden"
+                        >
+                            <LuX className="w-6 h-6" />
+                        </button>
+                    )}
                 </div>
 
                 <nav className="space-y-2">
@@ -45,6 +78,7 @@ export default function TeacherSidebar() {
                             <Link
                                 key={item.href}
                                 href={item.href}
+                                onClick={onClose}
                                 className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-200 group ${isActive
                                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                                     : 'text-gray-500 hover:bg-indigo-50 hover:text-indigo-600'

@@ -15,6 +15,8 @@ import {
     LuX
 } from "react-icons/lu";
 
+import { useAuth } from '@/contexts/AuthContext';
+
 interface AdminSidebarProps {
     className?: string;
     onClose?: () => void;
@@ -23,11 +25,17 @@ interface AdminSidebarProps {
 export default function AdminSidebar({ className = '', onClose }: AdminSidebarProps) {
     const router = useRouter();
     const pathname = usePathname();
+    const { user, logout, isAuthenticated, isLoading } = useAuth();
+
+    // Don't render sidebar if not authenticated
+    if (isLoading || !isAuthenticated || user?.role !== 'admin') {
+        return null;
+    }
 
     const handleLogout = async () => {
         try {
-            await apiClient.logout();
-            router.push('/login');
+            await logout();
+            // router.push('/login');
         } catch (error) {
             console.error('Logout failed:', error);
             router.push('/login');

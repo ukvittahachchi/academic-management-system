@@ -8,6 +8,17 @@ const nextConfig: NextConfig = {
     // Silences the warning about multiple lockfiles by setting the project root explicitly
     outputFileTracingRoot: path.join(__dirname, '../'),
 
+    experimental: {
+        // @ts-expect-error - React Compiler is standard in Next 15+ but types may lag
+        reactCompiler: true,
+        turbo: {
+            resolveAlias: {
+                canvas: './lib/empty-module.ts', // Turbo doesn't support 'false' yet, pointing to empty file
+                'pdfjs-dist': 'pdfjs-dist/build/pdf.mjs',
+            },
+        },
+    },
+
     webpack: (config) => {
         // Critical: prevents server-side crash requiring 'canvas'
         config.resolve.alias.canvas = false;

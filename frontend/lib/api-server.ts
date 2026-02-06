@@ -111,3 +111,31 @@ export async function getDownloadableContentServer(): Promise<any[] | null> {
         return null;
     }
 }
+
+export async function checkAuthServer(): Promise<{ isAuthenticated: boolean; user?: any }> {
+    const cookieStore = await cookies();
+    const cookieString = cookieStore.toString();
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/auth/check`, {
+            headers: {
+                'Cookie': cookieString,
+                'Content-Type': 'application/json',
+            },
+            cache: 'no-store',
+        });
+
+        if (!response.ok) {
+            return { isAuthenticated: false };
+        }
+
+        const data = await response.json();
+        return {
+            isAuthenticated: data.authenticated,
+            user: data.user
+        };
+    } catch (error) {
+        console.error('Server-side auth check failed:', error);
+        return { isAuthenticated: false };
+    }
+}

@@ -53,8 +53,6 @@ export default function ClientTeacherProfile() {
         }
     };
 
-    if (loading) return <LoadingSpinner />;
-
     return (
         <ProtectedRoute allowedRoles={['teacher', 'admin']}>
             <div className="min-h-screen bg-gray-50/50 pb-20">
@@ -81,11 +79,15 @@ export default function ClientTeacherProfile() {
                             <div className="space-y-4">
                                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
                                     <div className="flex items-center gap-3"><LuUsers className="text-blue-500" /> <span>Total Students</span></div>
-                                    <span className="font-bold text-xl">{stats?.total_students || 0}</span>
+                                    <span className="font-bold text-xl">
+                                        {loading ? <div className="h-6 w-8 bg-gray-200 animate-pulse rounded"></div> : (stats?.total_students || 0)}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between items-center p-4 bg-gray-50 rounded-xl">
                                     <div className="flex items-center gap-3"><LuBookOpen className="text-purple-500" /> <span>Active Classes</span></div>
-                                    <span className="font-bold text-xl">{stats?.total_classes || 0}</span>
+                                    <span className="font-bold text-xl">
+                                        {loading ? <div className="h-6 w-8 bg-gray-200 animate-pulse rounded"></div> : (stats?.total_classes || 0)}
+                                    </span>
                                 </div>
                             </div>
                         </StudentCard>

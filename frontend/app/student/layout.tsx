@@ -1,29 +1,25 @@
-'use client';
-
 import React from 'react';
-import StudentSidebar from '@/components/ui/StudentSidebar';
+import { checkAuthServer } from '@/lib/api-server';
+import { redirect } from 'next/navigation';
+import ClientStudentLayout from './ClientStudentLayout';
 
-import { LayoutProvider, useLayout } from '@/contexts/LayoutContext';
+export default async function StudentLayout({ children }: { children: React.ReactNode }) {
+    // Server-side auth check
+    const auth = await checkAuthServer();
 
-function StudentLayoutContent({ children }: { children: React.ReactNode }) {
-    const { isSidebarHidden } = useLayout();
+    if (!auth.isAuthenticated) {
+        redirect('/login?returnUrl=/student');
+    }
+
+    // Role check
+    if (auth.user?.role !== 'student') {
+        if (auth.user?.role === 'teacher') redirect('/teacher');
+        if (auth.user?.role === 'admin') redirect('/admin');
+    }
 
     return (
-        <div className="min-h-screen bg-surface-50">
-            {!isSidebarHidden && <StudentSidebar />}
-            <div className={`${!isSidebarHidden ? 'md:ml-64' : ''} transition-all duration-300`}>
-                {children}
-            </div>
-        </div>
-    );
-}
-
-export default function StudentLayout({ children }: { children: React.ReactNode }) {
-    return (
-        <LayoutProvider>
-            <StudentLayoutContent>
-                {children}
-            </StudentLayoutContent>
-        </LayoutProvider>
+        <ClientStudentLayout>
+            {children}
+        </ClientStudentLayout>
     );
 }

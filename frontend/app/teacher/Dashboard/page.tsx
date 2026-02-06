@@ -130,15 +130,17 @@ export default function TeacherDashboard() {
         );
     }
 
-    if (!dashboardData || !filters) {
-        return (
-            <div className="min-h-screen bg-gray-50 p-8">
-                <ErrorMessage error="No dashboard data available" onRetry={loadDashboardData} />
-            </div>
-        );
-    }
+    const overview = dashboardData?.overview || {
+        total_students: 0,
+        total_classes: 0,
+        overall_avg_score: 0
+    };
 
-    const { overview, classes, recent_activity, performance_distribution, top_performers, students_needing_attention, recent_reports, notifications } = dashboardData;
+    const classes = dashboardData?.classes || [];
+    const recent_activity = dashboardData?.recent_activity || [];
+    const performance_distribution = dashboardData?.performance_distribution || [];
+    const students_needing_attention = dashboardData?.students_needing_attention || [];
+    const notifications = dashboardData?.notifications || [];
 
     return (
         <ProtectedRoute allowedRoles={['teacher', 'admin']}>
@@ -195,11 +197,15 @@ export default function TeacherDashboard() {
                                 <div className="lg:col-span-2 space-y-6">
                                     {/* Activity Chart */}
                                     <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100">
-                                        <PerformanceChart
-                                            data={getActivityTrendData()}
-                                            title="Class Activity Trends (Last 7 Days)"
-                                            height={300}
-                                        />
+                                        {loading ? (
+                                            <div className="h-[300px] w-full bg-gray-100 animate-pulse rounded-xl"></div>
+                                        ) : (
+                                            <PerformanceChart
+                                                data={getActivityTrendData()}
+                                                title="Class Activity Trends (Last 7 Days)"
+                                                height={300}
+                                            />
+                                        )}
                                     </div>
 
                                     {/* Recent Activity List */}
@@ -209,7 +215,17 @@ export default function TeacherDashboard() {
                                             <button onClick={() => setActiveView('students')} className="text-sm font-medium text-indigo-600 hover:text-indigo-800">View All</button>
                                         </div>
                                         <div className="divide-y divide-gray-50">
-                                            {recent_activity.slice(0, 5).map((activity, index) => (
+                                            {loading ? (
+                                                [1, 2, 3].map((i) => (
+                                                    <div key={i} className="p-4 animate-pulse flex items-center gap-4">
+                                                        <div className="w-10 h-10 bg-gray-200 rounded-xl"></div>
+                                                        <div className="flex-1 space-y-2">
+                                                            <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                                                            <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                            ) : recent_activity.slice(0, 5).map((activity, index) => (
                                                 <div
                                                     key={index}
                                                     className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
@@ -258,7 +274,12 @@ export default function TeacherDashboard() {
                                             <p className="text-xs text-red-700 font-medium mt-1">Students requiring support</p>
                                         </div>
                                         <div className="divide-y divide-gray-50">
-                                            {students_needing_attention.length > 0 ? (
+                                            {loading ? (
+                                                <div className="p-4 animate-pulse space-y-3">
+                                                    <div className="h-4 bg-gray-200 rounded w-full"></div>
+                                                    <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+                                                </div>
+                                            ) : students_needing_attention.length > 0 ? (
                                                 students_needing_attention.map((student) => (
                                                     <div
                                                         key={student.student_id}
@@ -291,11 +312,15 @@ export default function TeacherDashboard() {
                                     <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-gray-100">
                                         <h3 className="text-sm font-bold text-gray-900 mb-4">Score Distribution</h3>
                                         <div className="h-48">
-                                            <DistributionChart
-                                                data={performance_distribution}
-                                                title=""
-                                                height={192}
-                                            />
+                                            {loading ? (
+                                                <div className="w-full h-full bg-gray-100 animate-pulse rounded-xl"></div>
+                                            ) : (
+                                                <DistributionChart
+                                                    data={performance_distribution}
+                                                    title=""
+                                                    height={192}
+                                                />
+                                            )}
                                         </div>
                                     </div>
                                 </div>
@@ -311,13 +336,19 @@ export default function TeacherDashboard() {
                                     </span>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                    {classes.map((classData) => (
-                                        <ClassCard
-                                            key={classData.assignment_id}
-                                            classData={classData}
-                                            onClick={() => handleClassClick(classData)}
-                                        />
-                                    ))}
+                                    {loading ? (
+                                        [1, 2, 3].map((i) => (
+                                            <div key={i} className="h-48 bg-gray-100 animate-pulse rounded-[2rem]"></div>
+                                        ))
+                                    ) : (
+                                        classes.map((classData) => (
+                                            <ClassCard
+                                                key={classData.assignment_id}
+                                                classData={classData}
+                                                onClick={() => handleClassClick(classData)}
+                                            />
+                                        ))
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -328,8 +359,8 @@ export default function TeacherDashboard() {
                                     <div className="sticky top-6">
                                         <FilterPanel
                                             filters={performanceFilters}
-                                            availableModules={filters.modules}
-                                            availableSections={filters.class_sections}
+                                            availableModules={filters?.modules || []}
+                                            availableSections={filters?.class_sections || []}
                                             onFilterChange={handleFilterChange}
                                             onReset={() => {
                                                 setSelectedClass(null);
@@ -351,12 +382,16 @@ export default function TeacherDashboard() {
                         {activeView === 'analytics' && (
                             <div className="space-y-6 animate-[fade-in_0.3s_ease-out]">
                                 <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-gray-100">
-                                    <PerformanceChart
-                                        data={getPerformanceTrendData()}
-                                        type="line"
-                                        title="Overall Performance Trends"
-                                        height={400}
-                                    />
+                                    {loading ? (
+                                        <div className="h-[400px] w-full bg-gray-100 animate-pulse rounded-xl"></div>
+                                    ) : (
+                                        <PerformanceChart
+                                            data={getPerformanceTrendData()}
+                                            type="line"
+                                            title="Overall Performance Trends"
+                                            height={400}
+                                        />
+                                    )}
                                 </div>
                                 {/* Original Table Code for Analytics Table maintained for functionality */}
                                 <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
@@ -375,36 +410,46 @@ export default function TeacherDashboard() {
                                                 </tr>
                                             </thead>
                                             <tbody className="bg-white divide-y divide-gray-200">
-                                                {dashboardData.classes.map((classItem) => (
-                                                    <tr key={classItem.assignment_id} className="hover:bg-gray-50 transition-colors">
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="font-bold text-gray-900">{classItem.module_name}</div>
-                                                            <div className="text-xs text-gray-500">Section {classItem.class_section}</div>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {classItem.student_count}
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${classItem.class_avg_score >= 80 ? 'bg-green-100 text-green-800' :
-                                                                classItem.class_avg_score >= 60 ? 'bg-yellow-100 text-yellow-800' :
-                                                                    'bg-red-100 text-red-800'
-                                                                }`}>
-                                                                {classItem.class_avg_score.toFixed(1)}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap">
-                                                            <div className="flex items-center gap-2">
-                                                                <div className="w-16 bg-gray-200 rounded-full h-1.5">
-                                                                    <div className="bg-indigo-600 h-1.5 rounded-full" style={{ width: `${classItem.completion_rate}%` }}></div>
+                                                {loading ? (
+                                                    [1, 2, 3].map((i) => (
+                                                        <tr key={i}>
+                                                            <td colSpan={5} className="px-6 py-4 text-center">
+                                                                <div className="h-6 bg-gray-100 animate-pulse rounded w-full"></div>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    (dashboardData?.classes || []).map((classItem) => (
+                                                        <tr key={classItem.assignment_id} className="hover:bg-gray-50 transition-colors">
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                <div className="font-bold text-gray-900">{classItem.module_name}</div>
+                                                                <div className="text-xs text-gray-500">Section {classItem.class_section}</div>
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                                {classItem.student_count}
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${classItem.class_avg_score >= 80 ? 'bg-green-100 text-green-800' :
+                                                                    classItem.class_avg_score >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                                                                        'bg-red-100 text-red-800'
+                                                                    }`}>
+                                                                    {classItem.class_avg_score.toFixed(1)}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                                <div className="flex items-center gap-2">
+                                                                    <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                                                                        <div className="bg-indigo-600 h-1.5 rounded-full" style={{ width: `${classItem.completion_rate}%` }}></div>
+                                                                    </div>
+                                                                    <span className="text-xs text-gray-500">{classItem.completion_rate.toFixed(0)}%</span>
                                                                 </div>
-                                                                <span className="text-xs text-gray-500">{classItem.completion_rate.toFixed(0)}%</span>
-                                                            </div>
-                                                        </td>
-                                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                            {classItem.last_activity ? format(new Date(classItem.last_activity), 'MMM dd') : '-'}
-                                                        </td>
-                                                    </tr>
-                                                ))}
+                                                            </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                                {classItem.last_activity ? format(new Date(classItem.last_activity), 'MMM dd') : '-'}
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
                                             </tbody>
                                         </table>
                                     </div>
