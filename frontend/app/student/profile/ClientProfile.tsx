@@ -1,39 +1,29 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/api-client';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import StudentCard from '@/components/ui/StudentCard';
 import StudentButton from '@/components/ui/StudentButton';
 import { format } from 'date-fns';
-import { LuUser, LuTrophy, LuFlame, LuCheck, LuMail, LuLock, LuLogOut, LuShield, LuInfo } from "react-icons/lu";
+import { LuTrophy, LuFlame, LuCheck, LuMail, LuLock, LuLogOut, LuShield, LuInfo } from "react-icons/lu";
 
-export default function ClientProfile() {
+interface ClientProfileProps {
+    initialStats: any; // DashboardOverview
+}
+
+export default function ClientProfile({ initialStats }: ClientProfileProps) {
     const router = useRouter();
     const { user, logout } = useAuth();
-    const [stats, setStats] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
+    const [stats] = useState<any>(initialStats);
     const [passwordData, setPasswordData] = useState({ current_password: '', new_password: '', confirm_password: '' });
     const [message, setMessage] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const loadStats = async () => {
-            try {
-                const data = await apiClient.getStudentDashboard();
-                setStats(data.overview);
-            } catch (e: any) {
-                console.error(e);
-            } finally {
-                setLoading(false);
-            }
-        };
-        loadStats();
-    }, []);
+    // No useEffect needed for stats as we get them from server
 
     const handlePasswordChange = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -52,7 +42,6 @@ export default function ClientProfile() {
         }
     };
 
-    if (loading) return <LoadingSpinner />;
 
     return (
         <ProtectedRoute>
