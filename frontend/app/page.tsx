@@ -19,12 +19,12 @@ export default function Home() {
         <div className="max-w-[95%] mx-auto flex justify-between items-center">
           {/* Left: System Logo & Name */}
           <div className="flex items-center gap-2 sm:gap-3">
-            <div className="relative h-10 w-10 sm:h-16 sm:w-16 flex-shrink-0">
+            <div className="relative h-10 w-10 sm:h-16 sm:w-16 flex-shrink-0 bg-white/90 rounded-full flex items-center justify-center shadow-lg border border-white/20 backdrop-blur-sm">
               <Image
-                src="/3logo.png"
-                alt="Ministry of Education"
+                src="/logo1.png"
+                alt="Education"
                 fill
-                className="object-contain"
+                className="object-contain p-1.5 sm:p-2"
                 priority
                 sizes="(max-width: 640px) 40px, 64px"
               />
