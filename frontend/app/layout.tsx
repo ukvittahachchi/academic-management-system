@@ -8,7 +8,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'ICT Academic System - ABC International School',
+  title: 'ICT Academic System',
   description: 'Module-based learning management system for ICT subjects',
 };
 

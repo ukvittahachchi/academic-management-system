@@ -43,11 +43,19 @@ export default function Home() {
           <div>
             <Link
               href="/login"
-              className="group relative inline-flex items-center gap-2 px-5 py-1.5 sm:px-6 sm:py-2.5 bg-white text-indigo-600 border-2 border-indigo-100 hover:border-indigo-600 hover:bg-indigo-50 rounded-full font-bold text-xs sm:text-base transition-all duration-200"
+              className="group relative inline-flex items-center justify-center px-6 py-2.5 sm:px-8 sm:py-2.5 text-sm sm:text-base font-bold text-white transition-all duration-300 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/40 backdrop-blur-md shadow-[0_0_15px_rgba(255,255,255,0.1)] hover:shadow-[0_0_20px_rgba(255,255,255,0.2)] overflow-hidden"
             >
-              <span>Login</span>
+              <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+              <span className="relative flex items-center gap-2 drop-shadow-md tracking-wide">
+                Login
+                <svg className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M5 12h14" />
+                  <path d="m12 5 7 7-7 7" />
+                </svg>
+              </span>
             </Link>
           </div>
+
         </div>
       </nav>
 
@@ -87,37 +95,25 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Footer - Centered */}
-      <footer className="mt-8 sm:mt-12 mb-4 px-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-center items-center gap-8 md:gap-16">
+      {/* Footer - Balanced Design */}
+      <footer className="mt-auto py-6 sm:py-8 border-t border-white/10 mt-8 backdrop-blur-md bg-black/10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6 md:gap-10">
 
-            {/* Ministry Logo */}
-            <div className="flex flex-col items-center">
-              <div className="relative h-12 w-auto sm:h-16 mb-2">
-                <Image
-                  src="/sri-lanka-state-logo-png_seeklogo-365182-removebg-preview.png"
-                  alt="Ministry of Education"
-                  width={64}
-                  height={64}
-                  className="h-full w-auto object-contain"
-                />
-              </div>
-            </div>
-
-            {/* Middle Text */}
-            <div className="text-center">
-              <h4 className="text-sm sm:text-base font-bold text-white drop-shadow-md">
+            {/* Left: Organization Info */}
+            <div className="text-center md:text-left flex flex-col items-center md:items-start">
+              <h4 className="text-sm md:text-base font-bold text-white drop-shadow-md tracking-wide">
                 National Institute of Education
               </h4>
-              <p className="text-xs sm:text-sm text-gray-200 font-medium drop-shadow-sm">
+              <div className="h-0.5 w-12 bg-indigo-500 rounded-full my-1.5 opacity-80" />
+              <p className="text-xs md:text-sm text-blue-200 font-medium drop-shadow-sm mt-0.5">
                 Department of Information Technology
               </p>
             </div>
 
-            {/* Techno Solutions Logo */}
-            <div className="flex flex-col items-center">
-              <div className="relative h-12 w-auto sm:h-16 mb-2">
+            {/* Right: Techno Solutions Logo */}
+            <div className="flex flex-col sm:flex-row items-center gap-3 md:gap-4">
+              <div className="relative h-12 w-auto sm:h-14 hover:scale-105 transition-transform duration-300 drop-shadow-xl p-1.5 bg-white/5 rounded-xl border border-white/10">
                 <Image
                   src="/images-removebg-preview.png"
                   alt="Techno Solutions"
