@@ -85,11 +85,12 @@ export default function ClientLearnContent() {
                         <StudentButton onClick={() => router.back()} variant="ghost" className="text-white hover:bg-white/10 mb-6"><LuArrowLeft className="mr-2" /> Back</StudentButton>
                         <h1 className="text-3xl font-black">{contentData?.content.title}</h1>
                         <div className="flex gap-4 mt-4">
-                            {contentData?.progress?.status !== 'completed' && (
-                                <StudentButton onClick={handleMarkComplete} disabled={isCompleting} className="bg-white text-indigo-600 font-bold">
-                                    {isCompleting ? 'Saving...' : 'Mark as Done'}
-                                </StudentButton>
-                            )}
+                            {contentData?.progress?.status !== 'completed' &&
+                                !['reading', 'video', 'presentation'].includes(contentData?.content.part_type || '') && (
+                                    <StudentButton onClick={handleMarkComplete} disabled={isCompleting} className="bg-white text-indigo-600 font-bold">
+                                        {isCompleting ? 'Saving...' : 'Mark as Done'}
+                                    </StudentButton>
+                                )}
                         </div>
                     </div>
                 </header>

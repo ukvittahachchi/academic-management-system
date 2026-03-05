@@ -77,7 +77,7 @@ export default function Home() {
                 </h1>
 
                 <p className="text-base sm:text-lg text-gray-100 max-w-2xl mx-auto leading-relaxed font-medium drop-shadow-md">
-                  To revolutionize the academic experience by delivering a centralized, automated, and secure digital platform that empowers students, streamlines teacher workflows, and provides administrators with data-driven control over curriculum and performance.
+                  To revolutionize the ICT academic experience by delivering a centralized, automated, and secure digital platform that empowers students, and streamlines teacher workflows.
                 </p>
               </div>
 
